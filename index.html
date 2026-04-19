@@ -751,20 +751,24 @@ async function extractAllPages() {
 }
 
 async function extractPage(dataUrl) {
-  // Google Cloud Vision OCR — 1000 free scans/month, very accurate
-  const VISION_KEY = 'AIzaSyAyTIocYaQZHuvEeg2YuvwZUF3goPlhWoM';
+  // Gemini Vision — 1500 free requests/day, works from browser, excellent OCR
+  const GEMINI_KEY = 'AIzaSyAhjEUWW7iEPcPwmOoJCtgpypbh4NmsItE';
   const base64 = dataUrl.split(',')[1];
+  const mimeType = dataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
 
   const res = await fetch(
-    `https://vision.googleapis.com/v1/images:annotate?key=${VISION_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        requests: [{
-          image: { content: base64 },
-          features: [{ type: 'DOCUMENT_TEXT_DETECTION', maxResults: 1 }]
-        }]
+        contents: [{
+          parts: [
+            { inline_data: { mime_type: mimeType, data: base64 } },
+            { text: "This is a children's storybook page. Extract ONLY the story text words in reading order as a single paragraph. Return ONLY the text, nothing else." }
+          ]
+        }],
+        generationConfig: { temperature: 0 }
       })
     }
   );
@@ -772,14 +776,10 @@ async function extractPage(dataUrl) {
   const data = await res.json();
   if (data.error) throw new Error(data.error.message);
 
-  const annotation = data.responses?.[0]?.fullTextAnnotation;
-  if (!annotation) throw new Error('No text found in image');
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+  if (!text) throw new Error('No text found in image');
 
-  // Clean up the extracted text
-  return annotation.text
-    .replace(/\n+/g, ' ')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
+  return text.replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
 }
 
 // ─────────────────────────────────────────
