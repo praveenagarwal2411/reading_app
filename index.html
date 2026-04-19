@@ -380,7 +380,7 @@ input[type=range] { flex:1;accent-color:var(--teal);cursor:pointer; }
 ══════════════════════════════════ -->
 <header>
   <h1>📖 Yuvaan's Reader</h1>
-  <p>Controller — TV syncs in real time</p>
+  <p>Controller — TV syncs in real time <span style="font-size:.7rem;opacity:.4">v4</span></p>
 </header>
 
 <!-- sync status bar -->
@@ -416,6 +416,7 @@ input[type=range] { flex:1;accent-color:var(--teal);cursor:pointer; }
       </div>
       <div class="pages-queue" id="pages-queue"></div>
       <div class="status info" id="scan-status">No pages added yet</div>
+      <div id="scan-debug" style="font-size:.72rem;color:#f9c74f;word-break:break-all;padding:4px;"></div>
       <button class="big-btn teal" id="extract-btn" onclick="extractAllPages()" disabled>🔍 Extract Text</button>
     </div>
     <div class="card ext-box" id="ext-box">
@@ -738,7 +739,12 @@ async function extractAllPages() {
     try {
       const t = await extractPage(scannedPages[i].dataUrl);
       pageTexts[i] = t; allText += (allText ? ' ' : '') + t;
-    } catch(err) { setScanStatus(`❌ Page ${i+1}: ${err.message}`, 'err'); }
+    } catch(err) {
+      console.error('Extract error:', err);
+      setScanStatus(`❌ Page ${i+1}: ${err.message}`, 'err');
+      // Show full error for debugging
+      document.getElementById('scan-debug').textContent = 'Error: ' + err.message;
+    }
   }
   if (allText.trim()) {
     document.getElementById('ext-text').value = allText.trim();
