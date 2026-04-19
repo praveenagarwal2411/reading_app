@@ -6,6 +6,7 @@
 <title>Yuvaan's Storybook Reader</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 :root {
   --bg: #0d1b2a;
@@ -692,7 +693,7 @@ function onPagesAdded(e) {
     reader.onload = ev => {
       const dataUrl = ev.target.result;
       const idx = scannedPages.length;
-      scannedPages.push({file, base64: dataUrl.split(',')[1]});
+      scannedPages.push({file, dataUrl});
       pageTexts.push('');
       addThumb(dataUrl, idx);
       updateScanStatus();
@@ -713,11 +714,7 @@ function addThumb(src, idx) {
 function removePage(idx) {
   scannedPages.splice(idx,1); pageTexts.splice(idx,1);
   document.getElementById('pages-queue').innerHTML='';
-  scannedPages.forEach((_,i)=>{
-    const fr=new FileReader();
-    fr.onload=ev=>addThumb(ev.target.result,i);
-    fr.readAsDataURL(scannedPages[i].file);
-  });
+  scannedPages.forEach((_,i)=> addThumb(scannedPages[i].dataUrl, i));
   updateScanStatus();
 }
 
@@ -733,39 +730,45 @@ function setScanStatus(msg,cls='info'){
 
 async function extractAllPages() {
   if (!scannedPages.length) return;
-  const btn=document.getElementById('extract-btn');
-  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Reading…';
-  setScanStatus(`Extracting from ${scannedPages.length} page(s)…`,'info');
-  let allText='';
-  for(let i=0;i<scannedPages.length;i++){
-    setScanStatus(`Reading page ${i+1} of ${scannedPages.length}…`,'info');
+  const btn = document.getElementById('extract-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Reading…';
+  setScanStatus(`Reading ${scannedPages.length} page(s) — this may take ~10s per page…`, 'info');
+  let allText = '';
+  for (let i = 0; i < scannedPages.length; i++) {
+    setScanStatus(`📖 Reading page ${i+1} of ${scannedPages.length}…`, 'info');
     try {
-      const t=await extractPage(scannedPages[i].base64);
-      pageTexts[i]=t; allText+=(allText?' ':'')+t;
-    } catch(err){setScanStatus(`❌ Page ${i+1}: ${err.message}`,'err');}
+      const t = await extractPage(scannedPages[i].dataUrl);
+      pageTexts[i] = t; allText += (allText ? ' ' : '') + t;
+    } catch(err) { setScanStatus(`❌ Page ${i+1}: ${err.message}`, 'err'); }
   }
-  if(allText.trim()){
-    document.getElementById('ext-text').value=allText.trim();
-    document.getElementById('ext-box').style.display='flex';
-    setScanStatus(`✅ Done! Edit if needed, then tap Start.`,'ok');
-  } else {setScanStatus('❌ No text found. Try clearer photos.','err');}
-  btn.disabled=false; btn.innerHTML='🔍 Extract Text';
+  if (allText.trim()) {
+    document.getElementById('ext-text').value = allText.trim();
+    document.getElementById('ext-box').style.display = 'flex';
+    setScanStatus('✅ Done! Edit if needed, then tap Start.', 'ok');
+  } else {
+    setScanStatus('❌ No text found. Try a clearer, well-lit photo.', 'err');
+  }
+  btn.disabled = false; btn.innerHTML = '🔍 Extract Text';
 }
 
-async function extractPage(base64) {
-  const res=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      model:'claude-sonnet-4-20250514',max_tokens:1000,
-      messages:[{role:'user',content:[
-        {type:'image',source:{type:'base64',media_type:'image/jpeg',data:base64}},
-        {type:'text',text:"Extract all story text from this children's book page. Return ONLY the words in order, nothing else."}
-      ]}]
-    })
+async function extractPage(dataUrl) {
+  // 100% free — runs in browser using Tesseract.js OCR, no API key needed
+  const result = await Tesseract.recognize(dataUrl, 'eng', {
+    logger: m => {
+      if (m.status === 'recognizing text') {
+        const pct = Math.round(m.progress * 100);
+        setScanStatus(`🔍 Scanning… ${pct}%`, 'info');
+      }
+    }
   });
-  const data=await res.json();
-  if(data.error)throw new Error(data.error.message);
-  return data.content.map(b=>b.text||'').join(' ').trim();
+  const text = result.data.text.trim();
+  if (!text) throw new Error('No text found in image');
+  // Clean up OCR artifacts
+  return text
+    .replace(/[^\x20-\x7E\n]/g, ' ')  // remove non-printable chars
+    .replace(/\n+/g, ' ')              // join lines
+    .replace(/\s{2,}/g, ' ')           // collapse spaces
+    .trim();
 }
 
 // ─────────────────────────────────────────
