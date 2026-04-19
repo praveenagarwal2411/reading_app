@@ -380,7 +380,7 @@ input[type=range] { flex:1;accent-color:var(--teal);cursor:pointer; }
 ══════════════════════════════════ -->
 <header>
   <h1>📖 Yuvaan's Reader</h1>
-  <p>Controller — TV syncs in real time <span style="font-size:.7rem;opacity:.4">v9</span></p>
+  <p>Controller — TV syncs in real time <span style="font-size:.7rem;opacity:.4">v10</span></p>
 </header>
 
 <!-- sync status bar -->
@@ -847,8 +847,7 @@ async function extractPage(dataUrl) {
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
   if (!text) throw new Error('No text found in image');
 
-  return text.replace(/
-+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  return text.replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
 }
 
 // ─────────────────────────────────────────
