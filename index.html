@@ -6,7 +6,6 @@
 <title>Yuvaan's Storybook Reader</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 :root {
   --bg: #0d1b2a;
@@ -752,22 +751,34 @@ async function extractAllPages() {
 }
 
 async function extractPage(dataUrl) {
-  // 100% free — runs in browser using Tesseract.js OCR, no API key needed
-  const result = await Tesseract.recognize(dataUrl, 'eng', {
-    logger: m => {
-      if (m.status === 'recognizing text') {
-        const pct = Math.round(m.progress * 100);
-        setScanStatus(`🔍 Scanning… ${pct}%`, 'info');
-      }
+  // Google Cloud Vision OCR — 1000 free scans/month, very accurate
+  const VISION_KEY = 'AIzaSyAyTIocYaQZHuvEeg2YuvwZUF3goPlhWoM';
+  const base64 = dataUrl.split(',')[1];
+
+  const res = await fetch(
+    `https://vision.googleapis.com/v1/images:annotate?key=${VISION_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requests: [{
+          image: { content: base64 },
+          features: [{ type: 'DOCUMENT_TEXT_DETECTION', maxResults: 1 }]
+        }]
+      })
     }
-  });
-  const text = result.data.text.trim();
-  if (!text) throw new Error('No text found in image');
-  // Clean up OCR artifacts
-  return text
-    .replace(/[^\x20-\x7E\n]/g, ' ')  // remove non-printable chars
-    .replace(/\n+/g, ' ')              // join lines
-    .replace(/\s{2,}/g, ' ')           // collapse spaces
+  );
+
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+
+  const annotation = data.responses?.[0]?.fullTextAnnotation;
+  if (!annotation) throw new Error('No text found in image');
+
+  // Clean up the extracted text
+  return annotation.text
+    .replace(/\n+/g, ' ')
+    .replace(/\s{2,}/g, ' ')
     .trim();
 }
 
