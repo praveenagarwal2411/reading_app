@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Storybook Reader</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1b2a;
+  --surface: #112240;
+  --card: #1a3a5c;
+  --gold: #ffd166;
+  --teal: #06d6a0;
+  --pink: #ef476f;
+  --blue: #118ab2;
+  --white: #e8f4f8;
+  --dim: rgba(232,244,248,.4);
+  --radius: 18px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; }
+body {
+  font-family:'Nunito',sans-serif;
+  background: var(--bg);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  color:var(--white);
+  overflow-x:hidden;
+}
+
+/* bg decoration */
+.bg-blobs {
+  position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden;
+}
+.bg-blobs span {
+  position:absolute; border-radius:50%; filter:blur(100px);
+}
+.bg-blobs span:nth-child(1) { width:400px;height:400px;background:rgba(6,214,160,.06);top:-100px;left:-100px; }
+.bg-blobs span:nth-child(2) { width:350px;height:350px;background:rgba(255,209,102,.05);bottom:-80px;right:-80px; }
+.bg-blobs span:nth-child(3) { width:250px;height:250px;background:rgba(239,71,111,.04);top:40%;left:50%; }
+
+/* ── HEADER ── */
+header {
+  position:relative;z-index:1;
+  text-align:center;
+  padding:26px 20px 0;
+}
+header h1 {
+  font-family:'Baloo 2',cursive;
+  font-size:clamp(1.7rem,5vw,2.3rem);
+  color:var(--gold);
+  letter-spacing:-.5px;
+}
+header p { font-size:.85rem; color:var(--dim); margin-top:2px; }
+
+/* ── TOP TABS ── */
+.top-tabs {
+  display:flex; margin-top:18px;
+  border-radius:14px; overflow:hidden;
+  border:1.5px solid rgba(255,255,255,.1);
+  position:relative;z-index:1;
+}
+.top-tab {
+  padding:10px 22px;
+  font-family:'Baloo 2',cursive; font-size:.95rem;
+  cursor:pointer; border:none;
+  background:rgba(255,255,255,.04); color:var(--dim);
+  transition:all .2s;
+}
+.top-tab.active { background:var(--gold); color:#111; }
+
+/* ── MAIN CONTAINER ── */
+.container {
+  width:100%; max-width:680px;
+  padding:20px 16px 60px;
+  position:relative;z-index:1;
+  display:flex; flex-direction:column; gap:16px;
+  align-items:center;
+}
+
+/* ── SECTION CARD ── */
+.card {
+  width:100%;
+  background:var(--surface);
+  border:1.5px solid rgba(255,255,255,.08);
+  border-radius:var(--radius);
+  padding:18px;
+  display:flex; flex-direction:column; gap:12px;
+}
+.card-title {
+  font-family:'Baloo 2',cursive; font-size:.85rem;
+  color:var(--teal); letter-spacing:.8px; text-transform:uppercase;
+}
+
+/* ── TEXTAREA ── */
+textarea {
+  width:100%; min-height:130px;
+  background:rgba(255,255,255,.05);
+  border:1.5px solid rgba(255,255,255,.1);
+  border-radius:12px;
+  color:var(--white);
+  font-family:'Nunito',sans-serif; font-size:1rem;
+  padding:14px; resize:vertical; outline:none; line-height:1.65;
+  transition:border-color .2s;
+}
+textarea:focus { border-color:var(--teal); }
+textarea::placeholder { color:rgba(232,244,248,.25); }
+
+/* ── SCAN ZONE ── */
+.scan-drop {
+  width:100%;
+  border:2px dashed rgba(255,255,255,.15);
+  border-radius:14px;
+  min-height:110px;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:6px;
+  cursor:pointer; position:relative; overflow:hidden;
+  background:rgba(255,255,255,.02);
+  transition:border-color .2s, background .2s;
+}
+.scan-drop:hover { border-color:var(--teal); background:rgba(6,214,160,.04); }
+.scan-drop input { position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0; }
+.scan-drop .drop-icon { font-size:2rem; }
+.scan-drop .drop-hint { font-size:.85rem; color:var(--dim); text-align:center; padding:0 16px; }
+.scan-drop .drop-hint strong { color:var(--teal); }
+
+/* pages queue */
+.pages-queue {
+  display:flex; flex-wrap:wrap; gap:8px;
+  width:100%;
+}
+.page-thumb {
+  position:relative;
+  width:72px; height:72px;
+  border-radius:10px; overflow:hidden;
+  border:2px solid rgba(255,255,255,.1);
+  flex-shrink:0;
+}
+.page-thumb img { width:100%;height:100%;object-fit:cover; }
+.page-thumb .del-btn {
+  position:absolute;top:2px;right:2px;
+  background:var(--pink); border:none;
+  border-radius:50%; width:18px;height:18px;
+  font-size:.6rem; cursor:pointer; color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  line-height:1;
+}
+.page-thumb .pg-num {
+  position:absolute;bottom:2px;left:4px;
+  font-size:.6rem; color:#fff;
+  font-family:'Baloo 2',cursive;
+  text-shadow:0 1px 3px rgba(0,0,0,.8);
+}
+
+/* status */
+.status { font-size:.85rem; text-align:center; min-height:20px; }
+.status.ok  { color:var(--teal); }
+.status.err { color:var(--pink); }
+.status.info { color:var(--dim); }
+
+/* extracted text */
+.ext-box { display:none; flex-direction:column; gap:8px; width:100%; }
+.ext-box label { font-family:'Baloo 2',cursive; font-size:.8rem; color:var(--gold); text-transform:uppercase; letter-spacing:.5px; }
+
+/* ── DISPLAY MODE TOGGLE ── */
+.mode-toggle {
+  display:flex; width:100%;
+  background:rgba(255,255,255,.04);
+  border-radius:12px; overflow:hidden;
+  border:1.5px solid rgba(255,255,255,.08);
+}
+.mode-btn {
+  flex:1; padding:10px 8px;
+  font-family:'Baloo 2',cursive; font-size:.95rem;
+  border:none; cursor:pointer;
+  background:transparent; color:var(--dim);
+  transition:all .2s;
+}
+.mode-btn.active { background:var(--blue); color:#fff; }
+
+/* ── SPEED ── */
+.speed-row {
+  display:flex; align-items:center; gap:12px; width:100%;
+}
+.speed-row label { font-size:.85rem; color:var(--dim); white-space:nowrap; font-family:'Baloo 2',cursive; }
+input[type=range] { flex:1; accent-color:var(--teal); cursor:pointer; }
+#speed-val { font-size:.85rem; color:var(--white); min-width:60px; text-align:right; font-family:'Baloo 2',cursive; }
+
+/* ── BIG BUTTON ── */
+.big-btn {
+  font-family:'Baloo 2',cursive; font-size:1.15rem; letter-spacing:.5px;
+  padding:15px 50px; border-radius:50px; border:none; cursor:pointer;
+  transition:transform .15s, box-shadow .15s;
+}
+.big-btn:hover { transform:translateY(-2px); }
+.big-btn.gold  { background:linear-gradient(135deg,var(--gold),#f4a213); color:#111; box-shadow:0 5px 20px rgba(255,209,102,.3); }
+.big-btn.gold:hover  { box-shadow:0 8px 28px rgba(255,209,102,.5); }
+.big-btn.teal  { background:linear-gradient(135deg,var(--teal),#04b887); color:#0d1b2a; box-shadow:0 5px 20px rgba(6,214,160,.25); }
+.big-btn.teal:hover  { box-shadow:0 8px 28px rgba(6,214,160,.4); }
+.big-btn:disabled { opacity:.45; cursor:not-allowed; transform:none !important; }
+
+/* spinner inline */
+.spin { display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,.2);border-top-color:var(--teal);border-radius:50%;animation:spin .65s linear infinite;vertical-align:middle;margin-right:6px; }
+@keyframes spin { to{transform:rotate(360deg);} }
+
+/* ══════════════════════════════
+   DISPLAY PAGE
+══════════════════════════════ */
+#page-display { display:none; }
+
+.word-stage {
+  width:100%; min-height:240px;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  background:rgba(255,255,255,.03);
+  border:1.5px solid rgba(255,255,255,.07);
+  border-radius:24px; position:relative; overflow:hidden;
+  padding:20px;
+}
+.word-stage::before {
+  content:''; position:absolute; inset:-60px;
+  background:radial-gradient(ellipse at center, rgba(255,209,102,.07) 0%, transparent 65%);
+  pointer-events:none;
+}
+
+/* word mode */
+#display-word {
+  font-family:'Baloo 2',cursive;
+  font-size:clamp(3.2rem,13vw,7rem);
+  color:var(--gold); text-align:center;
+  line-height:1.1; word-break:break-word;
+  animation:popIn .22s cubic-bezier(.34,1.56,.64,1);
+  text-shadow:0 0 60px rgba(255,209,102,.2);
+}
+
+/* sentence mode */
+#display-sentence {
+  font-family:'Baloo 2',cursive;
+  font-size:clamp(1.6rem,5vw,2.8rem);
+  color:var(--white); text-align:center;
+  line-height:1.4; padding:0 10px;
+  animation:popIn .22s cubic-bezier(.34,1.56,.64,1);
+}
+#display-sentence .hl { color:var(--gold); }
+
+@keyframes popIn {
+  from { transform:scale(.7); opacity:0; }
+  to   { transform:scale(1);  opacity:1; }
+}
+
+.stage-sub { font-size:.8rem; color:rgba(232,244,248,.28); margin-top:8px; }
+
+/* progress */
+.prog-track { width:100%; height:5px; background:rgba(255,255,255,.07); border-radius:99px; overflow:hidden; }
+.prog-fill  { height:100%; background:linear-gradient(90deg,var(--teal),var(--gold)); border-radius:99px; transition:width .2s; }
+
+/* controls */
+.ctrl-row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+.ctrl-btn {
+  font-family:'Baloo 2',cursive; font-size:.95rem;
+  padding:10px 24px; border-radius:50px; border:1.5px solid transparent; cursor:pointer; transition:all .15s;
+}
+.ctrl-btn.play  { background:var(--teal); color:#0d1b2a; border-color:var(--teal); }
+.ctrl-btn.play:hover { filter:brightness(1.1); }
+.ctrl-btn.ghost { background:transparent; border-color:rgba(255,255,255,.18); color:var(--dim); }
+.ctrl-btn.ghost:hover { border-color:rgba(255,255,255,.4); color:var(--white); }
+.ctrl-btn.danger { background:transparent; border-color:var(--pink); color:var(--pink); }
+.ctrl-btn.danger:hover { background:var(--pink); color:#fff; }
+
+/* display mode pill on display page */
+.disp-mode-pill {
+  display:flex; background:rgba(255,255,255,.06);
+  border-radius:10px; overflow:hidden; border:1.5px solid rgba(255,255,255,.08);
+}
+.disp-mode-pill button {
+  padding:7px 18px; font-family:'Baloo 2',cursive; font-size:.85rem;
+  border:none; cursor:pointer; background:transparent; color:var(--dim); transition:all .2s;
+}
+.disp-mode-pill button.active { background:var(--blue); color:#fff; }
+
+/* strip */
+.strip {
+  width:100%; background:rgba(255,255,255,.03);
+  border-radius:12px; padding:10px 14px;
+  display:flex; flex-wrap:wrap; gap:5px;
+  max-height:80px; overflow-y:auto;
+}
+.sw {
+  font-size:.78rem; padding:2px 7px; border-radius:7px;
+  background:rgba(255,255,255,.05); color:rgba(232,244,248,.32); transition:all .15s;
+}
+.sw.done    { color:rgba(232,244,248,.16); text-decoration:line-through; }
+.sw.current { background:var(--gold); color:#111; font-weight:700; }
+.sw.sent-current { background:rgba(17,138,178,.35); color:var(--white); }
+
+/* done banner */
+#done-banner {
+  display:none; font-family:'Baloo 2',cursive; font-size:1.7rem;
+  color:var(--teal); text-align:center;
+  animation:popIn .4s cubic-bezier(.34,1.56,.64,1);
+}
+
+/* emoji burst */
+.emoji-b {
+  font-size:2.6rem; position:absolute;
+  animation:burst .8s ease-out forwards;
+  pointer-events:none; user-select:none;
+}
+@keyframes burst {
+  0%   { transform:scale(0) rotate(0deg); opacity:1; }
+  60%  { transform:scale(1.3) rotate(18deg); opacity:1; }
+  100% { transform:scale(2) translateY(-65px); opacity:0; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-blobs"><span></span><span></span><span></span></div>
+
+<header>
+  <h1>📖 Storybook Reader</h1>
+  <p>Type or scan pages → display word by word or sentence by sentence on the big screen</p>
+</header>
+
+<!-- TOP TABS -->
+<div class="top-tabs">
+  <button class="top-tab active" onclick="switchInput('type')">✏️ Type Text</button>
+  <button class="top-tab"        onclick="switchInput('scan')">📷 Scan Pages</button>
+  <button class="top-tab"        onclick="switchInput('display')" id="tab-display" style="display:none">📺 Display</button>
+</div>
+
+<!-- ══ CONTAINER ══ -->
+<div class="container">
+
+  <!-- ── TYPE PANEL ── -->
+  <div id="panel-type" class="card">
+    <div class="card-title">✏️ Type your story or text</div>
+    <textarea id="type-text" placeholder="Type or paste any text here…&#10;e.g. Once upon a time, a little rabbit lived in a cozy burrow under the old oak tree."></textarea>
+  </div>
+
+  <!-- ── SCAN PANEL ── -->
+  <div id="panel-scan" style="display:none; width:100%; display:none; flex-direction:column; gap:12px; align-items:center;">
+
+    <div class="card">
+      <div class="card-title">📷 Add book pages (multiple allowed)</div>
+      <div class="scan-drop" id="scan-drop" onclick="document.getElementById('scan-input').click()">
+        <input type="file" id="scan-input" accept="image/*" multiple onchange="onPagesAdded(event)">
+        <span class="drop-icon">📸</span>
+        <p class="drop-hint">Tap to <strong>photograph</strong> or <strong>upload</strong> pages<br><span style="font-size:.75rem;opacity:.6">You can add multiple pages one by one</span></p>
+      </div>
+
+      <!-- page thumbnails -->
+      <div class="pages-queue" id="pages-queue"></div>
+
+      <div class="status info" id="scan-status">No pages added yet</div>
+
+      <button class="big-btn teal" id="extract-btn" onclick="extractAllPages()" disabled>🔍 Extract Text from Pages</button>
+    </div>
+
+    <!-- extracted text -->
+    <div class="card ext-box" id="ext-box">
+      <label>✏️ Extracted text — edit if needed</label>
+      <textarea id="ext-text" style="min-height:110px" placeholder="Extracted text will appear here…"></textarea>
+    </div>
+
+  </div>
+
+  <!-- ── SHARED: display mode + speed + start ── -->
+  <div class="card" id="shared-controls">
+    <div class="card-title">⚙️ Display Settings</div>
+
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <span style="font-size:.82rem;color:var(--dim)">Display mode on TV</span>
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="mode-word" onclick="setMode('word')">🔤 One Word</button>
+        <button class="mode-btn"        id="mode-sent" onclick="setMode('sentence')">📝 One Sentence</button>
+      </div>
+    </div>
+
+    <div class="speed-row">
+      <label>⏱ Speed</label>
+      <input type="range" id="speed-slider" min="1" max="5" value="3" oninput="updateSpeed(this.value)">
+      <span id="speed-val">Normal</span>
+    </div>
+
+    <button class="big-btn gold" id="start-btn" onclick="startReading()">▶ Start Reading</button>
+  </div>
+
+  <!-- ══ DISPLAY PAGE ══ -->
+  <div id="page-display" style="width:100%;display:none;flex-direction:column;gap:14px;align-items:center;">
+
+    <!-- live mode toggle -->
+    <div class="disp-mode-pill">
+      <button id="dp-word" class="active" onclick="switchDisplayMode('word')">🔤 Word</button>
+      <button id="dp-sent"               onclick="switchDisplayMode('sentence')">📝 Sentence</button>
+    </div>
+
+    <!-- stage -->
+    <div class="word-stage" id="word-stage">
+      <div id="display-word">Ready!</div>
+      <div id="display-sentence" style="display:none"></div>
+      <div class="stage-sub" id="stage-sub">Press Play to begin</div>
+    </div>
+
+    <!-- progress -->
+    <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+
+    <!-- controls -->
+    <div class="ctrl-row">
+      <button class="ctrl-btn ghost"  onclick="stepBack()">⏮ Back</button>
+      <button class="ctrl-btn play"   id="play-btn" onclick="togglePlay()">▶ Play</button>
+      <button class="ctrl-btn ghost"  onclick="stepForward()">⏭ Next</button>
+      <button class="ctrl-btn danger" onclick="resetAll()">✕ Reset</button>
+    </div>
+
+    <!-- strip -->
+    <div class="strip" id="strip"></div>
+
+    <div id="done-banner">🎉 Wonderful reading! All done! 🎉</div>
+
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ════════════════════════════════
+//  STATE
+// ════════════════════════════════
+let inputMode   = 'type';   // 'type' | 'scan'
+let displayMode = 'word';   // 'word' | 'sentence'
+let msPerWord   = 1000;
+
+// playback
+let units   = [];  // array of strings (words OR sentences)
+let current = 0;
+let playing = false;
+let timer   = null;
+
+// scan
+let scannedPages = []; // [{file, base64, thumb}]
+let pageTexts    = []; // extracted text per page
+
+const SPEED_MAP = {1:'Very Slow',2:'Slow',3:'Normal',4:'Fast',5:'Very Fast'};
+const MS_MAP    = {1:2400,2:1600,3:1000,4:600,5:320};
+
+// ════════════════════════════════
+//  NAV
+// ════════════════════════════════
+function switchInput(mode) {
+  if (mode === 'display') { showDisplayPage(); return; }
+  inputMode = mode;
+  document.querySelectorAll('.top-tab').forEach((t,i)=>t.classList.toggle('active', [mode==='type',mode==='scan',mode==='display'][i]));
+  document.getElementById('panel-type').style.display   = mode==='type'  ? 'flex' : 'none';
+  setPanelScan(mode==='scan');
+  document.getElementById('page-display').style.display = 'none';
+  document.getElementById('shared-controls').style.display = 'flex';
+}
+
+function setPanelScan(show) {
+  const p = document.getElementById('panel-scan');
+  p.style.display = show ? 'flex' : 'none';
+}
+
+function showDisplayPage() {
+  document.getElementById('panel-type').style.display   = 'none';
+  setPanelScan(false);
+  document.getElementById('shared-controls').style.display = 'none';
+  document.getElementById('page-display').style.display = 'flex';
+  document.querySelectorAll('.top-tab').forEach((t,i)=>t.classList.toggle('active', i===2));
+}
+
+// ════════════════════════════════
+//  SCAN — ADD PAGES
+// ════════════════════════════════
+function onPagesAdded(e) {
+  const files = Array.from(e.target.files);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const dataUrl = ev.target.result;
+      const b64 = dataUrl.split(',')[1];
+      const idx = scannedPages.length;
+      scannedPages.push({file, base64:b64});
+      pageTexts.push('');
+      addThumb(dataUrl, idx);
+      updateScanStatus();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function addThumb(src, idx) {
+  const q = document.getElementById('pages-queue');
+  const wrap = document.createElement('div');
+  wrap.className = 'page-thumb'; wrap.id = 'thumb-'+idx;
+  wrap.innerHTML = `<img src="${src}"><span class="pg-num">Pg ${idx+1}</span><button class="del-btn" onclick="removePage(${idx})">✕</button>`;
+  q.appendChild(wrap);
+}
+
+function removePage(idx) {
+  scannedPages.splice(idx,1);
+  pageTexts.splice(idx,1);
+  // re-render thumbs
+  const q = document.getElementById('pages-queue');
+  q.innerHTML='';
+  scannedPages.forEach((_,i)=>{
+    const fr = new FileReader();
+    fr.onload = ev => addThumb(ev.target.result, i);
+    fr.readAsDataURL(scannedPages[i].file);
+  });
+  updateScanStatus();
+}
+
+function updateScanStatus() {
+  const n = scannedPages.length;
+  const btn = document.getElementById('extract-btn');
+  btn.disabled = n===0;
+  setScanStatus(n===0 ? 'No pages added yet' : `${n} page${n>1?'s':''} ready — tap Extract to read text`,'info');
+}
+
+function setScanStatus(msg,cls='info') {
+  const el = document.getElementById('scan-status');
+  el.textContent = msg; el.className='status '+cls;
+}
+
+// ════════════════════════════════
+//  SCAN — EXTRACT
+// ════════════════════════════════
+async function extractAllPages() {
+  if (!scannedPages.length) return;
+  const btn = document.getElementById('extract-btn');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spin"></span> Reading pages…';
+  setScanStatus(`Extracting text from ${scannedPages.length} page(s)…`,'info');
+
+  let allText = '';
+  for (let i=0;i<scannedPages.length;i++) {
+    setScanStatus(`Reading page ${i+1} of ${scannedPages.length}…`,'info');
+    try {
+      const text = await extractPage(scannedPages[i].base64);
+      pageTexts[i] = text;
+      allText += (allText ? ' ' : '') + text;
+    } catch(err) {
+      setScanStatus(`❌ Page ${i+1} failed: ${err.message}`,'err');
+    }
+  }
+
+  if (allText.trim()) {
+    document.getElementById('ext-text').value = allText.trim();
+    const extBox = document.getElementById('ext-box');
+    extBox.style.display='flex';
+    setScanStatus(`✅ Text extracted from ${scannedPages.length} page(s)! Edit if needed.`,'ok');
+  } else {
+    setScanStatus('❌ Could not extract text. Try clearer photos.','err');
+  }
+
+  btn.disabled=false;
+  btn.innerHTML='🔍 Extract Text from Pages';
+}
+
+async function extractPage(base64) {
+  const res = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1000,
+      messages:[{
+        role:'user',
+        content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:base64}},
+          {type:'text',text:"Extract all readable story text from this children's book page. Return ONLY the story words in order, nothing else. No labels, no explanations, no punctuation descriptions — just the text."}
+        ]
+      }]
+    })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.content.map(b=>b.text||'').join(' ').trim();
+}
+
+// ════════════════════════════════
+//  DISPLAY MODE
+// ════════════════════════════════
+function setMode(m) {
+  displayMode = m;
+  document.getElementById('mode-word').classList.toggle('active',m==='word');
+  document.getElementById('mode-sent').classList.toggle('active',m==='sentence');
+}
+
+function switchDisplayMode(m) {
+  displayMode = m;
+  document.getElementById('dp-word').classList.toggle('active',m==='word');
+  document.getElementById('dp-sent').classList.toggle('active',m==='sentence');
+  // rebuild units from current full text
+  const text = getCurrentText();
+  if (text) {
+    buildUnits(text);
+    pausePlay(); current=0;
+    showUnit(0);
+  }
+}
+
+// ════════════════════════════════
+//  SPEED
+// ════════════════════════════════
+function updateSpeed(v) {
+  document.getElementById('speed-val').textContent = SPEED_MAP[v];
+  msPerWord = MS_MAP[v];
+  if (playing){clearInterval(timer);startTimer();}
+}
+
+// ════════════════════════════════
+//  GET TEXT
+// ════════════════════════════════
+function getCurrentText() {
+  if (inputMode==='type') return document.getElementById('type-text').value.trim();
+  return document.getElementById('ext-text').value.trim();
+}
+
+// ════════════════════════════════
+//  BUILD UNITS (words or sentences)
+// ════════════════════════════════
+function buildUnits(text) {
+  if (displayMode==='word') {
+    units = text.split(/\s+/).filter(Boolean);
+  } else {
+    // split on sentence endings
+    units = text.match(/[^.!?]+[.!?]*/g) || [text];
+    units = units.map(s=>s.trim()).filter(Boolean);
+  }
+}
+
+// ════════════════════════════════
+//  START
+// ════════════════════════════════
+function startReading() {
+  const text = getCurrentText();
+  if (!text) { alert('Please add some text first!'); return; }
+  msPerWord = MS_MAP[document.getElementById('speed-slider').value];
+  buildUnits(text);
+  if (!units.length) return;
+  current=0; playing=false;
+  document.getElementById('play-btn').textContent='▶ Play';
+  document.getElementById('done-banner').style.display='none';
+  document.getElementById('tab-display').style.display='block';
+  buildStrip();
+  showUnit(0);
+  showDisplayPage();
+}
+
+// ════════════════════════════════
+//  STRIP
+// ════════════════════════════════
+function buildStrip() {
+  const s = document.getElementById('strip');
+  s.innerHTML='';
+  units.forEach((u,i)=>{
+    const sp=document.createElement('span');
+    sp.className='sw'; sp.id='sw-'+i;
+    sp.textContent = displayMode==='word' ? u : `S${i+1}`;
+    s.appendChild(sp);
+  });
+}
+
+function updateStrip(idx) {
+  units.forEach((_,i)=>{
+    const el=document.getElementById('sw-'+i);
+    if(!el)return;
+    const cls = i<idx?'sw done':i===idx?('sw '+(displayMode==='word'?'current':'sent-current')):'sw';
+    el.className=cls;
+  });
+  const cur=document.getElementById('sw-'+idx);
+  if(cur)cur.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});
+}
+
+// ════════════════════════════════
+//  SHOW UNIT
+// ════════════════════════════════
+function showUnit(idx) {
+  if(idx<0||idx>=units.length)return;
+  current=idx;
+
+  const wordEl = document.getElementById('display-word');
+  const sentEl = document.getElementById('display-sentence');
+
+  if(displayMode==='word') {
+    wordEl.style.display='block'; sentEl.style.display='none';
+    wordEl.style.animation='none'; wordEl.offsetHeight; wordEl.style.animation='';
+    wordEl.textContent=units[idx];
+  } else {
+    wordEl.style.display='none'; sentEl.style.display='block';
+    sentEl.style.animation='none'; sentEl.offsetHeight; sentEl.style.animation='';
+    sentEl.textContent=units[idx];
+  }
+
+  document.getElementById('stage-sub').textContent =
+    displayMode==='word'
+      ? `Word ${idx+1} of ${units.length}`
+      : `Sentence ${idx+1} of ${units.length}`;
+
+  document.getElementById('prog-fill').style.width=((idx+1)/units.length*100)+'%';
+  updateStrip(idx);
+  document.getElementById('done-banner').style.display='none';
+}
+
+// ════════════════════════════════
+//  PLAYBACK
+// ════════════════════════════════
+function togglePlay() {
+  if(playing){pausePlay();}
+  else {
+    if(current>=units.length-1)current=0;
+    playing=true;
+    document.getElementById('play-btn').textContent='⏸ Pause';
+    showUnit(current);
+    startTimer();
+  }
+}
+
+function startTimer() {
+  // sentence mode gets 1.5× time automatically
+  const ms = displayMode==='sentence' ? msPerWord*1.8 : msPerWord;
+  timer=setInterval(()=>{
+    if(current<units.length-1){current++;showUnit(current);}
+    else{pausePlay();showDone();}
+  }, ms);
+}
+
+function pausePlay() {
+  playing=false; clearInterval(timer);
+  document.getElementById('play-btn').textContent='▶ Play';
+}
+
+function stepBack()    { pausePlay(); if(current>0)             showUnit(current-1); }
+function stepForward() { pausePlay(); if(current<units.length-1)showUnit(current+1); }
+
+// ════════════════════════════════
+//  DONE
+// ════════════════════════════════
+function showDone() {
+  const wordEl=document.getElementById('display-word');
+  const sentEl=document.getElementById('display-sentence');
+  if(displayMode==='word'){wordEl.textContent='🎉';}
+  else{sentEl.textContent='🎉 The End!';}
+  document.getElementById('stage-sub').textContent='Finished!';
+  document.getElementById('done-banner').style.display='block';
+  burst();
+}
+
+function burst() {
+  const stage=document.getElementById('word-stage');
+  ['⭐','🌟','✨','🎊','👏','🥳','📖','🎈'].forEach((em,i)=>{
+    setTimeout(()=>{
+      const e=document.createElement('span');
+      e.className='emoji-b'; e.textContent=em;
+      e.style.left=(10+Math.random()*80)+'%';
+      e.style.top =(15+Math.random()*60)+'%';
+      stage.appendChild(e);
+      setTimeout(()=>e.remove(),900);
+    },i*100);
+  });
+}
+
+// ════════════════════════════════
+//  RESET
+// ════════════════════════════════
+function resetAll() {
+  pausePlay();
+  units=[];current=0;
+  document.getElementById('display-word').textContent='Ready!';
+  document.getElementById('display-sentence').textContent='';
+  document.getElementById('display-word').style.display='block';
+  document.getElementById('display-sentence').style.display='none';
+  document.getElementById('stage-sub').textContent='Press Play to begin';
+  document.getElementById('prog-fill').style.width='0%';
+  document.getElementById('strip').innerHTML='';
+  document.getElementById('done-banner').style.display='none';
+  document.getElementById('tab-display').style.display='none';
+  switchInput(inputMode);
+}
+
+// ════════════════════════════════
+//  INIT
+// ════════════════════════════════
+switchInput('type');
+updateSpeed(3);
+</script>
+</body>
+</html>
