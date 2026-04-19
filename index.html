@@ -380,7 +380,7 @@ input[type=range] { flex:1;accent-color:var(--teal);cursor:pointer; }
 ══════════════════════════════════ -->
 <header>
   <h1>📖 Yuvaan's Reader</h1>
-  <p>Controller — TV syncs in real time <span style="font-size:.7rem;opacity:.4">v6</span></p>
+  <p>Controller — TV syncs in real time <span style="font-size:.7rem;opacity:.4">v9</span></p>
 </header>
 
 <!-- sync status bar -->
@@ -410,9 +410,9 @@ input[type=range] { flex:1;accent-color:var(--teal);cursor:pointer; }
     <div class="card">
       <div class="card-title">📷 Add book pages</div>
       <label class="scan-drop" for="scan-input" style="cursor:pointer">
-        <input type="file" id="scan-input" accept="image/*" multiple onchange="onPagesAdded(event)" style="display:none">
+        <input type="file" id="scan-input" accept="image/*,application/pdf" multiple onchange="onPagesAdded(event)" style="display:none">
         <span class="drop-icon">📸</span>
-        <p class="drop-hint">Tap to <strong>photograph</strong> or <strong>upload</strong> pages</p>
+        <p class="drop-hint">Tap to <strong>photograph</strong>, <strong>upload images</strong> or <strong>PDF files</strong></p>
       </label>
       <div class="pages-queue" id="pages-queue"></div>
       <div class="status info" id="scan-status">No pages added yet</div>
@@ -691,23 +691,68 @@ function onPagesAdded(e) {
   Array.from(e.target.files).forEach(file => {
     const reader = new FileReader();
     reader.onload = ev => {
-      const dataUrl = ev.target.result;
-      const idx = scannedPages.length;
-      scannedPages.push({file, dataUrl});
-      pageTexts.push('');
-      addThumb(dataUrl, idx);
-      updateScanStatus();
+      // Compress image before storing — phone photos are 3-5MB, limit is 1MB
+      const raw = ev.target.result;
+      const isPdf = file.type === 'application/pdf';
+      // Skip compression for PDFs, compress images only
+      const processPage = isPdf
+        ? Promise.resolve(raw)
+        : compressImage(raw, 900);
+      processPage.then(compressed => {
+        const idx = scannedPages.length;
+        scannedPages.push({file, dataUrl: compressed});
+        pageTexts.push('');
+        addThumb(isPdf ? null : compressed, idx);
+        updateScanStatus();
+      });
     };
     reader.readAsDataURL(file);
   });
   e.target.value = '';
 }
 
+// Compress image to under maxKB kilobytes using canvas
+function compressImage(dataUrl, maxKB = 900) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      let quality = 0.85;
+      let scale = 1;
+      // If image is very large, scale it down first
+      const MAX_DIM = 1600;
+      if (img.width > MAX_DIM || img.height > MAX_DIM) {
+        scale = MAX_DIM / Math.max(img.width, img.height);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // Try compressing, reduce quality until under maxKB
+      const tryCompress = (q) => {
+        const result = canvas.toDataURL('image/jpeg', q);
+        const kb = Math.round((result.length * 3) / 4 / 1024);
+        if (kb <= maxKB || q <= 0.3) {
+          resolve(result);
+        } else {
+          tryCompress(q - 0.1);
+        }
+      };
+      tryCompress(quality);
+    };
+    img.src = dataUrl;
+  });
+}
+
 function addThumb(src, idx) {
   const q = document.getElementById('pages-queue');
   const wrap = document.createElement('div');
   wrap.className='page-thumb'; wrap.id='thumb-'+idx;
-  wrap.innerHTML=`<img src="${src}"><span class="pg-num">Pg ${idx+1}</span><button class="del-btn" onclick="removePage(${idx})">✕</button>`;
+  const inner = src
+    ? `<img src="${src}">`
+    : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;background:rgba(255,209,102,.1);">📄</div>`;
+  wrap.innerHTML=`${inner}<span class="pg-num">Pg ${idx+1}</span><button class="del-btn" onclick="removePage(${idx})">✕</button>`;
   q.appendChild(wrap);
 }
 
@@ -731,67 +776,79 @@ function setScanStatus(msg,cls='info'){
 async function extractAllPages() {
   if (!scannedPages.length) return;
   const btn = document.getElementById('extract-btn');
-  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Reading…';
-  setScanStatus(`Reading ${scannedPages.length} page(s) — this may take ~10s per page…`, 'info');
+  btn.disabled = true;
+  const total = scannedPages.length;
   let allText = '';
-  for (let i = 0; i < scannedPages.length; i++) {
-    setScanStatus(`📖 Reading page ${i+1} of ${scannedPages.length}…`, 'info');
+  let failed = 0;
+
+  for (let i = 0; i < total; i++) {
+    const pct = Math.round((i / total) * 100);
+    setScanStatus(`📖 Reading page ${i+1} of ${total}… (${pct}%)`, 'info');
+    btn.innerHTML = `<span class="spin"></span> ${i+1}/${total} pages`;
+
     try {
       const t = await extractPage(scannedPages[i].dataUrl);
-      pageTexts[i] = t; allText += (allText ? ' ' : '') + t;
+      pageTexts[i] = t;
+      allText += (allText ? ' ' : '') + t;
     } catch(err) {
       console.error('Extract error:', err);
-      setScanStatus(`❌ Page ${i+1}: ${err.message}`, 'err');
-      // Show full error for debugging
-      document.getElementById('scan-debug').textContent = 'Error: ' + err.message;
+      failed++;
+      document.getElementById('scan-debug').textContent = 'Last error: ' + err.message;
+
     }
+
+    // Small delay between pages to be nice to the API
+    if (i < total - 1) await sleep(500);
   }
+
   if (allText.trim()) {
     document.getElementById('ext-text').value = allText.trim();
     document.getElementById('ext-box').style.display = 'flex';
-    setScanStatus('✅ Done! Edit if needed, then tap Start.', 'ok');
+    const msg = failed > 0
+      ? `⚠️ Done with ${failed} page(s) skipped. Edit text then tap Start.`
+      : `✅ All ${total} pages extracted! Edit if needed, then tap Start.`;
+    setScanStatus(msg, failed > 0 ? 'info' : 'ok');
   } else {
-    setScanStatus('❌ No text found. Try a clearer, well-lit photo.', 'err');
+    setScanStatus('❌ No text found. Try clearer, well-lit photos.', 'err');
   }
-  btn.disabled = false; btn.innerHTML = '🔍 Extract Text';
+  btn.disabled = false;
+  btn.innerHTML = '🔍 Extract Text';
 }
 
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
 async function extractPage(dataUrl) {
-  // OCR.space — 25,000 free pages/month, no billing, no card, works from browser
-  const OCR_KEY = 'K81748977388957';  // free tier key
-  
-  // Convert dataUrl to blob for form upload
+  // Gemini 2.0 Flash — fast, accurate, free with activated account
+  const GEMINI_KEY = 'AIzaSyAhjEUWW7iEPcPwmOoJCtgpypbh4NmsItE';
+  const isPdf = dataUrl.startsWith('data:application/pdf');
   const base64 = dataUrl.split(',')[1];
   const mimeType = dataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
-  
-  const formData = new FormData();
-  formData.append('base64Image', `data:${mimeType};base64,${base64}`);
-  formData.append('apikey', OCR_KEY);
-  formData.append('language', 'eng');
-  formData.append('isOverlayRequired', 'false');
-  formData.append('detectOrientation', 'true');
-  formData.append('scale', 'true');
-  formData.append('OCREngine', '2');  // Engine 2 is better for printed text
 
-  const res = await fetch('https://api.ocr.space/parse/image', {
-    method: 'POST',
-    body: formData
-  });
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { inline_data: { mime_type: mimeType, data: base64 } },
+            { text: "This is a children's storybook page. Extract ONLY the story text words in reading order as a single paragraph. Ignore decorative text, page numbers, or publisher info. Return ONLY the text, nothing else." }
+          ]
+        }],
+        generationConfig: { temperature: 0 }
+      })
+    }
+  );
 
   const data = await res.json();
-  
-  if (data.IsErroredOnProcessing) {
-    throw new Error(data.ErrorMessage?.[0] || 'OCR failed');
-  }
+  if (data.error) throw new Error(data.error.message);
 
-  const text = data.ParsedResults?.[0]?.ParsedText?.trim();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
   if (!text) throw new Error('No text found in image');
 
-  return text
-    .replace(/\r\n|\r/g, ' ')
-    .replace(/\n+/g, ' ')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
+  return text.replace(/
++/g, ' ').replace(/\s{2,}/g, ' ').trim();
 }
 
 // ─────────────────────────────────────────
