@@ -380,7 +380,7 @@ input[type=range] { flex:1;accent-color:var(--teal);cursor:pointer; }
 ══════════════════════════════════ -->
 <header>
   <h1>📖 Yuvaan's Reader</h1>
-  <p>Controller — TV syncs in real time <span style="font-size:.7rem;opacity:.4">v10</span></p>
+  <p>Controller — TV syncs in real time <span style="font-size:.7rem;opacity:.4">v11</span></p>
 </header>
 
 <!-- sync status bar -->
@@ -819,7 +819,7 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 async function extractPage(dataUrl) {
   // Gemini 2.0 Flash — fast, accurate, free with activated account
-  const GEMINI_KEY = 'AIzaSyAhjEUWW7iEPcPwmOoJCtgpypbh4NmsItE';
+  const GEMINI_KEY = 'AIzaSyBbiFscdpJB9q6GPtzOLUpRr2J8D2kWT2I';
   const isPdf = dataUrl.startsWith('data:application/pdf');
   const base64 = dataUrl.split(',')[1];
   const mimeType = dataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
