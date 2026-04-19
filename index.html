@@ -219,7 +219,7 @@ textarea::placeholder { color:rgba(232,244,248,.22); }
   background:rgba(255,255,255,.02);transition:border-color .2s,background .2s;
 }
 .scan-drop:hover { border-color:var(--teal);background:rgba(6,214,160,.04); }
-.scan-drop input { position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0; }
+.scan-drop input { display:none; }
 .scan-drop .drop-icon { font-size:2.2rem; }
 .scan-drop .drop-hint { font-size:.82rem;color:var(--dim);text-align:center;padding:0 14px; }
 .scan-drop .drop-hint strong { color:var(--teal); }
@@ -380,7 +380,7 @@ input[type=range] { flex:1;accent-color:var(--teal);cursor:pointer; }
 ══════════════════════════════════ -->
 <header>
   <h1>📖 Yuvaan's Reader</h1>
-  <p>Controller — TV syncs in real time <span style="font-size:.7rem;opacity:.4">v4</span></p>
+  <p>Controller — TV syncs in real time <span style="font-size:.7rem;opacity:.4">v6</span></p>
 </header>
 
 <!-- sync status bar -->
@@ -409,11 +409,11 @@ input[type=range] { flex:1;accent-color:var(--teal);cursor:pointer; }
   <div id="panel-scan" style="display:none;width:100%;flex-direction:column;gap:12px;align-items:center;">
     <div class="card">
       <div class="card-title">📷 Add book pages</div>
-      <div class="scan-drop" onclick="document.getElementById('scan-input').click()">
-        <input type="file" id="scan-input" accept="image/*" multiple onchange="onPagesAdded(event)">
+      <label class="scan-drop" for="scan-input" style="cursor:pointer">
+        <input type="file" id="scan-input" accept="image/*" multiple onchange="onPagesAdded(event)" style="display:none">
         <span class="drop-icon">📸</span>
         <p class="drop-hint">Tap to <strong>photograph</strong> or <strong>upload</strong> pages</p>
-      </div>
+      </label>
       <div class="pages-queue" id="pages-queue"></div>
       <div class="status info" id="scan-status">No pages added yet</div>
       <div id="scan-debug" style="font-size:.72rem;color:#f9c74f;word-break:break-all;padding:4px;"></div>
@@ -757,35 +757,41 @@ async function extractAllPages() {
 }
 
 async function extractPage(dataUrl) {
-  // Gemini Vision — 1500 free requests/day, works from browser, excellent OCR
-  const GEMINI_KEY = 'AIzaSyAhjEUWW7iEPcPwmOoJCtgpypbh4NmsItE';
+  // OCR.space — 25,000 free pages/month, no billing, no card, works from browser
+  const OCR_KEY = 'K81748977388957';  // free tier key
+  
+  // Convert dataUrl to blob for form upload
   const base64 = dataUrl.split(',')[1];
   const mimeType = dataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
+  
+  const formData = new FormData();
+  formData.append('base64Image', `data:${mimeType};base64,${base64}`);
+  formData.append('apikey', OCR_KEY);
+  formData.append('language', 'eng');
+  formData.append('isOverlayRequired', 'false');
+  formData.append('detectOrientation', 'true');
+  formData.append('scale', 'true');
+  formData.append('OCREngine', '2');  // Engine 2 is better for printed text
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { inline_data: { mime_type: mimeType, data: base64 } },
-            { text: "This is a children's storybook page. Extract ONLY the story text words in reading order as a single paragraph. Return ONLY the text, nothing else." }
-          ]
-        }],
-        generationConfig: { temperature: 0 }
-      })
-    }
-  );
+  const res = await fetch('https://api.ocr.space/parse/image', {
+    method: 'POST',
+    body: formData
+  });
 
   const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
+  
+  if (data.IsErroredOnProcessing) {
+    throw new Error(data.ErrorMessage?.[0] || 'OCR failed');
+  }
 
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+  const text = data.ParsedResults?.[0]?.ParsedText?.trim();
   if (!text) throw new Error('No text found in image');
 
-  return text.replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  return text
+    .replace(/\r\n|\r/g, ' ')
+    .replace(/\n+/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
 
 // ─────────────────────────────────────────
