@@ -245,7 +245,7 @@ input[type=range]{flex:1;accent-color:var(--teal);cursor:pointer;}
 <!-- PHONE HEADER -->
 <header>
   <h1>📖 Yuvaan's Reader</h1>
-  <p>Controller · TV syncs in real time <span style="font-size:.65rem;opacity:.35">v15</span></p>
+  <p>Controller · TV syncs in real time <span style="font-size:.65rem;opacity:.35">v16</span></p>
 </header>
 <div class="sync-bar">
   <div class="sync-left"><span class="dot" id="phone-dot"></span><span id="phone-conn-label">Not connected</span></div>
@@ -407,17 +407,32 @@ function getBestVoice(){
   return voices.find(x=>x.lang==='en-GB')||voices.find(x=>x.lang==='en-US')||voices.find(x=>x.lang&&x.lang.startsWith('en'))||null;
 }
 
-function speak(text){
+function speak(text, onDone){
   if(!synth) return;
+  // Cancel any ongoing speech
   synth.cancel();
-  const utt=new SpeechSynthesisUtterance(text);
-  const v=getBestVoice();
-  if(v) utt.voice=v;
-  utt.rate=0.78;   // slow and clear
-  utt.pitch=1.05;
-  utt.volume=1;
-  utt.lang='en-GB';
-  synth.speak(utt);
+  
+  // Small delay after cancel to let browser reset properly
+  setTimeout(()=>{
+    const utt = new SpeechSynthesisUtterance(text);
+    const v = getBestVoice();
+    if(v) utt.voice = v;
+    utt.rate  = 0.65;   // very slow and clear for a child
+    utt.pitch = 1.0;
+    utt.volume = 1.0;
+    utt.lang  = 'en-GB';
+    
+    // Chrome bug workaround — speech cuts off after ~15s
+    // Keep it alive with a periodic resume
+    const keepAlive = setInterval(()=>{
+      if(!synth.speaking){ clearInterval(keepAlive); return; }
+      synth.pause(); synth.resume();
+    }, 10000);
+    
+    utt.onend = ()=>{ clearInterval(keepAlive); if(onDone) onDone(); };
+    utt.onerror = ()=>{ clearInterval(keepAlive); };
+    synth.speak(utt);
+  }, 150);
 }
 
 // ═══════════════════════
@@ -564,7 +579,23 @@ function tvShowUnit(idx){
   document.getElementById('tv-sub').textContent=(displayMode==='word'?'Word ':'Sentence ')+(idx+1)+' of '+units.length;
   document.getElementById('tv-prog-fill').style.width=((idx+1)/units.length*100)+'%';
   updateTvListenBadge();
-  if(listenMode) speak(units[idx]);
+  if(listenMode){
+    // Speak the text — if TV is auto-playing, pause timer until speech done
+    if(tvPlaying){
+      clearInterval(tvTimer);
+      speak(units[idx], ()=>{
+        // Speech finished — wait a moment then advance
+        setTimeout(()=>{
+          if(tvPlaying && myRole==='tv'){
+            if(current < units.length-1){ current++; tvShowUnit(current); publish({type:'show',idx:current,mode:displayMode,listen:listenMode}); }
+            else{ tvPause(); tvShowDone(); publish({type:'done'}); }
+          }
+        }, 400);
+      });
+    } else {
+      speak(units[idx]);
+    }
+  }
 }
 
 function updateTvListenBadge(){
@@ -947,6 +978,14 @@ function togglePlay(){
 }
 
 function startTimer(){
+  // In listen mode, we don't use fixed intervals
+  // Instead speech completion drives advancement (handled on TV side)
+  // For phone-controlled non-listen mode, use fixed timing
+  if(listenMode){
+    // Let TV handle timing via speech onend callback
+    // Phone just sends initial show, TV auto-advances after each word
+    return;
+  }
   const ms=displayMode==='sentence'?msPerWord*1.8:msPerWord;
   timer=setInterval(()=>{
     if(current<units.length-1){current++;sendShow(current);}
@@ -965,6 +1004,8 @@ function stepForward(){pausePlay();if(current<units.length-1){current++;sendShow
 function sendShow(idx){
   publish({type:'show',idx,mode:displayMode,listen:listenMode});
   updateNowPlaying(idx); updatePhoneProg(idx);
+  // If phone is the TV (same device) speak here too
+  // If separate device, TV handles speech via message
 }
 
 function updateNowPlaying(idx){
