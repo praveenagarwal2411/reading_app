@@ -44,8 +44,10 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;
 .code-input:focus{border-color:var(--teal);}
 
 /* ── TV SCREEN ── */
-#tv-screen{position:fixed;inset:0;z-index:100;background:#000;
-  display:none;flex-direction:column;align-items:center;justify-content:center;}
+#tv-screen{position:fixed;inset:0;z-index:100;background:#0a0a0a;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  width:100vw;height:100vh;overflow:hidden;}
+body.tv-mode { overflow:hidden; }
 .tv-header{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;
   align-items:center;padding:16px 24px;}
 .tv-conn{display:flex;align-items:center;gap:8px;font-family:'Baloo 2',cursive;font-size:.85rem;color:rgba(255,255,255,.4);}
@@ -242,10 +244,11 @@ input[type=range]{flex:1;accent-color:var(--teal);cursor:pointer;}
   <div class="tv-prog-bar"><div class="tv-prog-fill" id="tv-prog-fill" style="width:0%"></div></div>
 </div>
 
-<!-- PHONE HEADER -->
+<!-- PHONE UI -->
+<div id="phone-ui">
 <header>
   <h1>📖 Yuvaan's Reader</h1>
-  <p>Controller · TV syncs in real time <span style="font-size:.65rem;opacity:.35">v16</span></p>
+  <p>Controller · TV syncs in real time <span style="font-size:.65rem;opacity:.35">v17</span></p>
 </header>
 <div class="sync-bar">
   <div class="sync-left"><span class="dot" id="phone-dot"></span><span id="phone-conn-label">Not connected</span></div>
@@ -384,7 +387,7 @@ let displayMode='word', listenMode=false, msPerWord=1600;
 let scannedPages=[], pageTexts=[], inputMode='type', ocrEngine='gemini';
 
 const SPEED_LABELS={1:'Very Slow',2:'Slow',3:'Normal',4:'Fast',5:'Very Fast'};
-const SPEED_MS={1:2800,2:1800,3:1100,4:650,5:350};
+const SPEED_MS={1:2000,2:1400,3:900,4:550,5:300};
 
 // TTS
 const synth=window.speechSynthesis;
@@ -417,7 +420,7 @@ function speak(text, onDone){
     const utt = new SpeechSynthesisUtterance(text);
     const v = getBestVoice();
     if(v) utt.voice = v;
-    utt.rate  = 0.65;   // very slow and clear for a child
+    utt.rate  = 0.75;   // slow and clear for a child
     utt.pitch = 1.0;
     utt.volume = 1.0;
     utt.lang  = 'en-GB';
@@ -477,9 +480,12 @@ function selectRole(role){
   myRole=role;
   document.getElementById('role-screen').style.display='none';
   if(role==='tv'){
+    // Hide ALL phone UI elements
+    document.getElementById('phone-ui').style.display='none';
     roomId=String(Math.floor(1000+Math.random()*9000));
     channel='yuvaanv13_'+roomId;
     document.getElementById('tv-screen').style.display='flex';
+    document.body.classList.add('tv-mode');
     document.getElementById('tv-code-display').textContent=roomId;
     document.getElementById('tv-room-badge').textContent='Room '+roomId;
     initPubNub();
@@ -580,21 +586,7 @@ function tvShowUnit(idx){
   document.getElementById('tv-prog-fill').style.width=((idx+1)/units.length*100)+'%';
   updateTvListenBadge();
   if(listenMode){
-    // Speak the text — if TV is auto-playing, pause timer until speech done
-    if(tvPlaying){
-      clearInterval(tvTimer);
-      speak(units[idx], ()=>{
-        // Speech finished — wait a moment then advance
-        setTimeout(()=>{
-          if(tvPlaying && myRole==='tv'){
-            if(current < units.length-1){ current++; tvShowUnit(current); publish({type:'show',idx:current,mode:displayMode,listen:listenMode}); }
-            else{ tvPause(); tvShowDone(); publish({type:'done'}); }
-          }
-        }, 400);
-      });
-    } else {
-      speak(units[idx]);
-    }
+    speak(units[idx]);
   }
 }
 
@@ -978,15 +970,10 @@ function togglePlay(){
 }
 
 function startTimer(){
-  // In listen mode, we don't use fixed intervals
-  // Instead speech completion drives advancement (handled on TV side)
-  // For phone-controlled non-listen mode, use fixed timing
-  if(listenMode){
-    // Let TV handle timing via speech onend callback
-    // Phone just sends initial show, TV auto-advances after each word
-    return;
-  }
-  const ms=displayMode==='sentence'?msPerWord*1.8:msPerWord;
+  // Always use interval-based timing
+  // In listen mode, use longer intervals to give speech time to finish
+  const base = displayMode==='sentence' ? msPerWord*1.8 : msPerWord;
+  const ms = listenMode ? Math.max(base, 3000) : base;
   timer=setInterval(()=>{
     if(current<units.length-1){current++;sendShow(current);}
     else{pausePlay();publish({type:'done'});}
@@ -1076,7 +1063,7 @@ function closeDonePopup(startNow){
 // INIT
 // ═══════════════════════
 switchInput('type');
-updateSpeed(2); // default Slow
+updateSpeed(3); // default Normal
 </script>
 <!-- TOAST NOTIFICATION -->
 <div id="toast" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
