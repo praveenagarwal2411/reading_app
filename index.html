@@ -245,7 +245,7 @@ input[type=range]{flex:1;accent-color:var(--teal);cursor:pointer;}
 <!-- PHONE HEADER -->
 <header>
   <h1>📖 Yuvaan's Reader</h1>
-  <p>Controller · TV syncs in real time <span style="font-size:.65rem;opacity:.35">v14</span></p>
+  <p>Controller · TV syncs in real time <span style="font-size:.65rem;opacity:.35">v15</span></p>
 </header>
 <div class="sync-bar">
   <div class="sync-left"><span class="dot" id="phone-dot"></span><span id="phone-conn-label">Not connected</span></div>
@@ -743,37 +743,58 @@ async function extractAllPages(){
   const total=scannedPages.length;
   let allText='', failed=0;
 
-  for(let i=0;i<total;i++){
-    setScanStatus(`📖 Reading page ${i+1} of ${total}…`,'info');
-    btn.innerHTML=`<span class="spin"></span>${i+1} / ${total}`;
-    try{
-      const t=await extractPage(scannedPages[i].dataUrl);
-      pageTexts[i]=t; allText+=(allText?' ':'')+t;
-    } catch(err){
-      failed++;
-      dbg.style.display='block';
-      dbg.textContent='Error on page '+(i+1)+': '+err.message;
-    }
-    if(i<total-1){
-      if(ocrEngine==='ocr.space'){
-        // OCR.space free = 3 requests/min, wait 22s between pages
-        setScanStatus(`✅ Page ${i+1} done — waiting before next (OCR.space limit)…`,'ok');
-        await sleep(22000);
-      } else {
-        await sleep(400);
+  // Show background processing notification
+  showToast(`📖 Scanning ${total} page${total>1?'s':''} in background…`, 0); // 0 = stays until done
+
+  // Run in background — user can scroll, switch tabs etc
+  (async()=>{
+    for(let i=0;i<total;i++){
+      // Update toast progress
+      showToast(`📖 Scanning page ${i+1} of ${total}… please wait`, 0);
+      setScanStatus(`📖 Page ${i+1} of ${total} — scanning in background…`,'info');
+      try{
+        const t=await extractPage(scannedPages[i].dataUrl);
+        pageTexts[i]=t; allText+=(allText?' ':'')+t;
+      } catch(err){
+        failed++;
+        dbg.style.display='block';
+        dbg.textContent='Error on page '+(i+1)+': '+err.message;
+      }
+      if(i<total-1){
+        if(ocrEngine==='ocr.space'){
+          // Show countdown between pages
+          for(let s=21;s>0;s--){
+            showToast(`⏳ Page ${i+1} done — next page in ${s}s…`, 0);
+            await sleep(1000);
+          }
+        } else {
+          await sleep(400);
+        }
       }
     }
-  }
 
-  if(allText.trim()){
-    document.getElementById('ext-text').value=allText.trim();
-    document.getElementById('ext-box').style.display='flex';
-    setScanStatus(failed>0?`⚠️ ${total-failed}/${total} pages read. Edit and tap Start.`:`✅ All ${total} pages extracted! Edit if needed.`,failed>0?'info':'ok');
-  } else {
-    setScanStatus('❌ Could not read text. Tap "Set API Key" to update your key.','err');
-  }
-  btn.disabled=false; btn.innerHTML='🔍 Extract Text from Pages';
+    // DONE — show popup notification
+    hideToast();
+    if(allText.trim()){
+      document.getElementById('ext-text').value=allText.trim();
+      document.getElementById('ext-box').style.display='flex';
+      const msg=failed>0
+        ?`⚠️ ${total-failed} of ${total} pages scanned`
+        :`✅ All ${total} pages scanned!`;
+      setScanStatus(msg, failed>0?'info':'ok');
+      showDonePopup(total, failed, allText.trim());
+    } else {
+      setScanStatus('❌ Could not read text. Try switching OCR engine.','err');
+      showToast('❌ Scanning failed — check error below', 4000);
+    }
+    btn.disabled=false;
+    btn.innerHTML='🔍 Extract Text from Pages';
+  })();
+
+  // Return immediately so UI stays responsive
+  btn.innerHTML='<span class="spin"></span>Scanning in background…';
 }
+
 
 async function extractPage(dataUrl){
   if(ocrEngine==='gemini'){
@@ -966,10 +987,95 @@ function resetAll(){
 }
 
 // ═══════════════════════
+// TOAST & POPUP
+// ═══════════════════════
+let toastTimer=null;
+function showToast(msg, duration=3000){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.style.display='block';
+  if(toastTimer) clearTimeout(toastTimer);
+  if(duration>0) toastTimer=setTimeout(hideToast, duration);
+}
+function hideToast(){
+  const el=document.getElementById('toast');
+  el.style.display='none';
+  if(toastTimer) clearTimeout(toastTimer);
+}
+
+function showDonePopup(total, failed, text){
+  const popup=document.getElementById('done-popup');
+  const title=document.getElementById('popup-title');
+  const msg=document.getElementById('popup-msg');
+  if(failed===0){
+    title.textContent=`✅ All ${total} pages scanned!`;
+    title.style.color='var(--teal)';
+    const wordCount=text.split(/\s+/).length;
+    msg.textContent=`${wordCount} words extracted and ready. You can edit the text or start reading right away on the TV!`;
+  } else {
+    title.textContent=`⚠️ ${total-failed} of ${total} pages scanned`;
+    title.style.color='var(--gold)';
+    msg.textContent=`${failed} page(s) could not be read. You can edit the text before starting.`;
+  }
+  popup.style.display='flex';
+  // Also vibrate phone if supported
+  if(navigator.vibrate) navigator.vibrate([200,100,200]);
+}
+
+function closeDonePopup(startNow){
+  document.getElementById('done-popup').style.display='none';
+  if(startNow){
+    // Switch to scan input mode and start
+    inputMode='scan';
+    startReading();
+  }
+  // else just close — user can edit text
+}
+
+// ═══════════════════════
 // INIT
 // ═══════════════════════
 switchInput('type');
 updateSpeed(2); // default Slow
 </script>
+<!-- TOAST NOTIFICATION -->
+<div id="toast" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  z-index:999;background:#1a3a5c;border:1.5px solid rgba(6,214,160,.3);border-radius:14px;
+  padding:12px 22px;font-family:'Baloo 2',cursive;font-size:.92rem;color:var(--white);
+  box-shadow:0 8px 32px rgba(0,0,0,.4);max-width:90vw;text-align:center;
+  animation:slideUp .3s ease-out;">
+</div>
+
+<!-- DONE POPUP -->
+<div id="done-popup" style="display:none;position:fixed;inset:0;z-index:500;
+  background:rgba(0,0,0,.75);align-items:center;justify-content:center;padding:24px;">
+  <div style="background:var(--surface);border-radius:24px;padding:28px 24px;max-width:360px;width:100%;
+    display:flex;flex-direction:column;gap:16px;align-items:center;text-align:center;
+    border:1.5px solid rgba(6,214,160,.3);box-shadow:0 16px 48px rgba(0,0,0,.5);">
+    <div style="font-size:3rem">🎉</div>
+    <h3 style="font-family:'Baloo 2',cursive;font-size:1.5rem;color:var(--teal)" id="popup-title">All pages scanned!</h3>
+    <p style="font-size:.88rem;color:var(--dim);line-height:1.6" id="popup-msg"></p>
+    <div style="display:flex;gap:10px;width:100%">
+      <button onclick="closeDonePopup(true)"
+        style="flex:1;font-family:'Baloo 2',cursive;font-size:1rem;padding:13px;
+        border-radius:50px;border:none;background:linear-gradient(135deg,var(--gold),#f4a213);
+        color:#111;cursor:pointer;font-weight:700;">
+        ▶ Start Reading!
+      </button>
+      <button onclick="closeDonePopup(false)"
+        style="flex:1;font-family:'Baloo 2',cursive;font-size:.95rem;padding:13px;
+        border-radius:50px;border:1.5px solid rgba(255,255,255,.2);
+        background:transparent;color:var(--dim);cursor:pointer;">
+        ✏️ Edit Text
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes slideUp{from{transform:translateX(-50%) translateY(20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+@keyframes popupIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+#done-popup>div{animation:popupIn .3s cubic-bezier(.34,1.56,.64,1);}
+</style>
+
 </body>
 </html>
