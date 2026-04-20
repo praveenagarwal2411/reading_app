@@ -8,322 +8,185 @@
 <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
 <style>
 :root {
-  --bg: #0d1b2a;
-  --surface: #112240;
-  --card: #1a3a5c;
-  --gold: #ffd166;
-  --teal: #06d6a0;
-  --pink: #ef476f;
-  --blue: #118ab2;
-  --white: #e8f4f8;
-  --dim: rgba(232,244,248,.4);
-  --radius: 18px;
+  --bg:#0d1b2a; --surface:#112240; --gold:#ffd166; --teal:#06d6a0;
+  --pink:#ef476f; --blue:#118ab2; --white:#e8f4f8; --dim:rgba(232,244,248,.4);
+  --radius:18px;
 }
-* { margin:0; padding:0; box-sizing:border-box; }
-html,body { height:100%; }
-body {
-  font-family:'Nunito',sans-serif;
-  background:var(--bg);
-  min-height:100vh;
-  display:flex; flex-direction:column; align-items:center;
-  color:var(--white); overflow-x:hidden;
-}
-
-.bg-blobs { position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden; }
-.bg-blobs span { position:absolute;border-radius:50%;filter:blur(100px); }
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;color:var(--white);overflow-x:hidden;}
+.bg-blobs{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.bg-blobs span{position:absolute;border-radius:50%;filter:blur(100px);}
 .bg-blobs span:nth-child(1){width:400px;height:400px;background:rgba(6,214,160,.06);top:-100px;left:-100px;}
 .bg-blobs span:nth-child(2){width:350px;height:350px;background:rgba(255,209,102,.05);bottom:-80px;right:-80px;}
 .bg-blobs span:nth-child(3){width:250px;height:250px;background:rgba(239,71,111,.04);top:40%;left:50%;}
 
-/* ── ROLE SELECT SCREEN ── */
-#role-screen {
-  position:fixed;inset:0;z-index:100;
-  background:var(--bg);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:28px;padding:24px;
-}
-#role-screen h1 {
-  font-family:'Baloo 2',cursive;font-size:clamp(1.8rem,5vw,2.5rem);
-  color:var(--gold);text-align:center;
-}
-#role-screen p { color:var(--dim);font-size:.95rem;text-align:center;max-width:340px; }
-.role-cards { display:flex;gap:16px;flex-wrap:wrap;justify-content:center; }
-.role-card {
-  width:150px;padding:24px 16px;
-  background:var(--surface);border:2px solid rgba(255,255,255,.08);
-  border-radius:20px;cursor:pointer;text-align:center;
-  transition:all .2s;display:flex;flex-direction:column;gap:10px;align-items:center;
-}
-.role-card:hover { border-color:var(--teal);transform:translateY(-3px);box-shadow:0 8px 24px rgba(6,214,160,.15); }
-.role-card .icon { font-size:2.8rem; }
-.role-card .label { font-family:'Baloo 2',cursive;font-size:1rem;color:var(--white); }
-.role-card .desc  { font-size:.75rem;color:var(--dim);line-height:1.4; }
+/* ROLE SCREEN */
+#role-screen{position:fixed;inset:0;z-index:100;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px;}
+#role-screen h1{font-family:'Baloo 2',cursive;font-size:clamp(1.8rem,5vw,2.5rem);color:var(--gold);text-align:center;}
+#role-screen p{color:var(--dim);font-size:.95rem;text-align:center;max-width:340px;}
+.role-cards{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;}
+.role-card{width:150px;padding:24px 16px;background:var(--surface);border:2px solid rgba(255,255,255,.08);
+  border-radius:20px;cursor:pointer;text-align:center;transition:all .2s;
+  display:flex;flex-direction:column;gap:10px;align-items:center;}
+.role-card:hover{border-color:var(--teal);transform:translateY(-3px);}
+.role-card .icon{font-size:2.8rem;}
+.role-card .label{font-family:'Baloo 2',cursive;font-size:1rem;color:var(--white);}
+.role-card .desc{font-size:.75rem;color:var(--dim);line-height:1.4;}
 
-/* ── ROOM CODE INPUT ── */
-#room-screen {
-  position:fixed;inset:0;z-index:100;
-  background:var(--bg);
-  display:none;flex-direction:column;align-items:center;justify-content:center;
-  gap:20px;padding:24px;
-}
-#room-screen h2 { font-family:'Baloo 2',cursive;font-size:1.6rem;color:var(--gold); }
-#room-screen p  { color:var(--dim);font-size:.9rem;text-align:center;max-width:300px; }
-.code-input {
-  font-family:'Baloo 2',cursive;font-size:2.5rem;letter-spacing:12px;
-  width:200px;text-align:center;
-  background:var(--surface);border:2px solid rgba(255,255,255,.15);
-  border-radius:14px;color:var(--white);padding:14px;outline:none;
-  transition:border-color .2s;
-}
-.code-input:focus { border-color:var(--teal); }
-.code-input::placeholder { letter-spacing:4px;font-size:1.5rem;color:rgba(232,244,248,.2); }
+/* ROOM SCREEN */
+#room-screen{position:fixed;inset:0;z-index:100;background:var(--bg);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:24px;}
+#room-screen h2{font-family:'Baloo 2',cursive;font-size:1.6rem;color:var(--gold);}
+#room-screen p{color:var(--dim);font-size:.9rem;text-align:center;max-width:300px;}
+.code-input{font-family:'Baloo 2',cursive;font-size:2.5rem;letter-spacing:12px;width:200px;
+  text-align:center;background:var(--surface);border:2px solid rgba(255,255,255,.15);
+  border-radius:14px;color:var(--white);padding:14px;outline:none;transition:border-color .2s;}
+.code-input:focus{border-color:var(--teal);}
 
-/* ── TV DISPLAY SCREEN ── */
-#tv-screen {
-  position:fixed;inset:0;z-index:100;
-  background:var(--bg);
-  display:none;flex-direction:column;align-items:center;justify-content:center;
-  gap:20px;padding:30px;
-}
-.tv-room-badge {
-  position:absolute;top:20px;right:24px;
-  font-family:'Baloo 2',cursive;font-size:.8rem;
-  color:var(--dim);background:rgba(255,255,255,.05);
-  padding:6px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.08);
-}
-.tv-conn-dot {
-  position:absolute;top:20px;left:24px;
-  display:flex;align-items:center;gap:8px;
-  font-family:'Baloo 2',cursive;font-size:.8rem;color:var(--dim);
-}
-.dot { width:8px;height:8px;border-radius:50%;background:#555;transition:background .3s; }
-.dot.on { background:var(--teal);box-shadow:0 0 8px var(--teal); }
+/* TV SCREEN */
+#tv-screen{position:fixed;inset:0;z-index:100;background:var(--bg);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:30px;}
+.tv-room-badge{position:absolute;top:20px;right:24px;font-family:'Baloo 2',cursive;font-size:.8rem;
+  color:var(--dim);background:rgba(255,255,255,.05);padding:6px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.08);}
+.tv-conn-dot{position:absolute;top:20px;left:24px;display:flex;align-items:center;gap:8px;
+  font-family:'Baloo 2',cursive;font-size:.8rem;color:var(--dim);}
+.dot{width:8px;height:8px;border-radius:50%;background:#555;transition:background .3s;}
+.dot.on{background:var(--teal);box-shadow:0 0 8px var(--teal);}
+.tv-waiting{text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;}
+.tv-waiting .big-code{font-family:'Baloo 2',cursive;font-size:clamp(4rem,15vw,9rem);color:var(--gold);
+  letter-spacing:16px;text-shadow:0 0 60px rgba(255,209,102,.3);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.tv-waiting p{font-family:'Baloo 2',cursive;font-size:1.1rem;color:var(--dim);}
+#tv-word-display{font-family:'Baloo 2',cursive;font-size:clamp(4rem,18vw,11rem);color:var(--gold);
+  text-align:center;line-height:1.05;word-break:break-word;
+  animation:popIn .2s cubic-bezier(.34,1.56,.64,1);text-shadow:0 0 80px rgba(255,209,102,.25);
+  display:none;padding:0 30px;}
+#tv-sent-display{font-family:'Baloo 2',cursive;font-size:clamp(2rem,6vw,4rem);color:var(--white);
+  text-align:center;line-height:1.4;display:none;padding:0 40px;
+  animation:popIn .2s cubic-bezier(.34,1.56,.64,1);}
+@keyframes popIn{from{transform:scale(.65);opacity:0}to{transform:scale(1);opacity:1}}
+.tv-progress{position:absolute;bottom:0;left:0;right:0;height:5px;background:rgba(255,255,255,.06);}
+.tv-progress-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--gold));border-radius:99px;transition:width .25s;}
+.tv-counter{position:absolute;bottom:14px;font-family:'Baloo 2',cursive;font-size:.9rem;color:rgba(232,244,248,.25);}
+.emoji-b{font-size:3rem;position:absolute;animation:burst .8s ease-out forwards;pointer-events:none;user-select:none;}
+@keyframes burst{0%{transform:scale(0) rotate(0deg);opacity:1}60%{transform:scale(1.4) rotate(18deg);opacity:1}100%{transform:scale(2.2) translateY(-80px);opacity:0}}
 
-.tv-waiting {
-  text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;
-}
-.tv-waiting .big-code {
-  font-family:'Baloo 2',cursive;font-size:clamp(4rem,15vw,9rem);
-  color:var(--gold);letter-spacing:16px;
-  text-shadow:0 0 60px rgba(255,209,102,.3);
-  animation:pulse 2s ease-in-out infinite;
-}
-@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.7} }
-.tv-waiting p { font-family:'Baloo 2',cursive;font-size:1.1rem;color:var(--dim); }
+/* PHONE UI */
+header{position:relative;z-index:1;text-align:center;padding:22px 20px 0;}
+header h1{font-family:'Baloo 2',cursive;font-size:clamp(1.4rem,4vw,2rem);color:var(--gold);}
+header p{font-size:.82rem;color:var(--dim);margin-top:2px;}
+.sync-bar{display:flex;align-items:center;justify-content:space-between;
+  width:calc(100% - 28px);max-width:660px;padding:8px 16px;
+  background:rgba(255,255,255,.04);border-radius:12px;border:1.5px solid rgba(255,255,255,.07);
+  position:relative;z-index:1;margin-top:14px;}
+.sync-left{display:flex;align-items:center;gap:8px;font-family:'Baloo 2',cursive;font-size:.85rem;color:var(--dim);}
+.room-pill{background:rgba(6,214,160,.12);border:1px solid rgba(6,214,160,.25);border-radius:99px;padding:3px 12px;font-size:.8rem;color:var(--teal);}
+.top-tabs{display:flex;margin-top:14px;border-radius:12px;overflow:hidden;border:1.5px solid rgba(255,255,255,.1);position:relative;z-index:1;}
+.top-tab{padding:9px 20px;font-family:'Baloo 2',cursive;font-size:.9rem;cursor:pointer;border:none;background:rgba(255,255,255,.04);color:var(--dim);transition:all .2s;}
+.top-tab.active{background:var(--gold);color:#111;}
+.container{width:100%;max-width:660px;padding:16px 14px 60px;position:relative;z-index:1;display:flex;flex-direction:column;gap:14px;align-items:center;}
+.card{width:100%;background:var(--surface);border:1.5px solid rgba(255,255,255,.07);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:11px;}
+.card-title{font-family:'Baloo 2',cursive;font-size:.8rem;color:var(--teal);letter-spacing:.8px;text-transform:uppercase;}
+textarea{width:100%;min-height:120px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);
+  border-radius:12px;color:var(--white);font-family:'Nunito',sans-serif;font-size:1rem;
+  padding:12px;resize:vertical;outline:none;line-height:1.65;transition:border-color .2s;}
+textarea:focus{border-color:var(--teal);}
+textarea::placeholder{color:rgba(232,244,248,.22);}
 
-#tv-word-display {
-  font-family:'Baloo 2',cursive;
-  font-size:clamp(4rem,18vw,11rem);
-  color:var(--gold);text-align:center;
-  line-height:1.05;word-break:break-word;
-  animation:popIn .2s cubic-bezier(.34,1.56,.64,1);
-  text-shadow:0 0 80px rgba(255,209,102,.25);
-  display:none;padding:0 30px;
-}
-#tv-sent-display {
-  font-family:'Baloo 2',cursive;
-  font-size:clamp(2rem,6vw,4rem);
-  color:var(--white);text-align:center;
-  line-height:1.4;display:none;padding:0 40px;
-  animation:popIn .2s cubic-bezier(.34,1.56,.64,1);
-}
-@keyframes popIn { from{transform:scale(.65);opacity:0}to{transform:scale(1);opacity:1} }
-
-.tv-progress {
-  position:absolute;bottom:0;left:0;right:0;height:5px;
-  background:rgba(255,255,255,.06);
-}
-.tv-progress-fill {
-  height:100%;background:linear-gradient(90deg,var(--teal),var(--gold));
-  border-radius:99px;transition:width .25s;
-}
-.tv-counter {
-  position:absolute;bottom:14px;
-  font-family:'Baloo 2',cursive;font-size:.9rem;color:rgba(232,244,248,.25);
-}
-
-/* emoji burst */
-.emoji-b {
-  font-size:3rem;position:absolute;
-  animation:burst .8s ease-out forwards;pointer-events:none;user-select:none;
-}
-@keyframes burst {
-  0%{transform:scale(0) rotate(0deg);opacity:1}
-  60%{transform:scale(1.4) rotate(18deg);opacity:1}
-  100%{transform:scale(2.2) translateY(-80px);opacity:0}
-}
-
-/* ══════════════════════════
-   PHONE / CONTROLLER UI
-══════════════════════════ */
-header {
-  position:relative;z-index:1;text-align:center;padding:22px 20px 0;
-}
-header h1 { font-family:'Baloo 2',cursive;font-size:clamp(1.4rem,4vw,2rem);color:var(--gold); }
-header p  { font-size:.82rem;color:var(--dim);margin-top:2px; }
-
-.sync-bar {
-  display:flex;align-items:center;justify-content:space-between;
-  width:100%;max-width:660px;
-  padding:8px 16px;
-  background:rgba(255,255,255,.04);
-  border-radius:12px;
-  border:1.5px solid rgba(255,255,255,.07);
-  position:relative;z-index:1;
-  margin-top:14px;
-}
-.sync-left  { display:flex;align-items:center;gap:8px;font-family:'Baloo 2',cursive;font-size:.85rem;color:var(--dim); }
-.sync-right { font-family:'Baloo 2',cursive;font-size:.8rem;color:var(--teal); }
-.room-pill  { background:rgba(6,214,160,.12);border:1px solid rgba(6,214,160,.25);border-radius:99px;padding:3px 12px;font-size:.8rem;color:var(--teal); }
-
-.top-tabs {
-  display:flex;margin-top:14px;border-radius:12px;overflow:hidden;
-  border:1.5px solid rgba(255,255,255,.1);position:relative;z-index:1;
-}
-.top-tab {
-  padding:9px 20px;font-family:'Baloo 2',cursive;font-size:.9rem;
-  cursor:pointer;border:none;background:rgba(255,255,255,.04);color:var(--dim);transition:all .2s;
-}
-.top-tab.active { background:var(--gold);color:#111; }
-
-.container {
-  width:100%;max-width:660px;
-  padding:16px 14px 60px;
-  position:relative;z-index:1;
-  display:flex;flex-direction:column;gap:14px;align-items:center;
-}
-
-.card {
-  width:100%;background:var(--surface);
-  border:1.5px solid rgba(255,255,255,.07);
-  border-radius:var(--radius);padding:16px;
-  display:flex;flex-direction:column;gap:11px;
-}
-.card-title { font-family:'Baloo 2',cursive;font-size:.8rem;color:var(--teal);letter-spacing:.8px;text-transform:uppercase; }
-
-textarea {
-  width:100%;min-height:120px;
-  background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);
-  border-radius:12px;color:var(--white);
-  font-family:'Nunito',sans-serif;font-size:1rem;
-  padding:12px;resize:vertical;outline:none;line-height:1.65;transition:border-color .2s;
-}
-textarea:focus { border-color:var(--teal); }
-textarea::placeholder { color:rgba(232,244,248,.22); }
-
-.scan-drop {
-  width:100%;border:2px dashed rgba(255,255,255,.13);border-radius:14px;
-  min-height:100px;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:6px;
-  cursor:pointer;position:relative;overflow:hidden;
-  background:rgba(255,255,255,.02);transition:border-color .2s,background .2s;
-}
-.scan-drop:hover { border-color:var(--teal);background:rgba(6,214,160,.04); }
-.scan-drop input { display:none; }
-.scan-drop .drop-icon { font-size:2.2rem; }
-.scan-drop .drop-hint { font-size:.82rem;color:var(--dim);text-align:center;padding:0 14px; }
-.scan-drop .drop-hint strong { color:var(--teal); }
-
-.pages-queue { display:flex;flex-wrap:wrap;gap:8px;width:100%; }
-.page-thumb {
-  position:relative;width:64px;height:64px;
-  border-radius:10px;overflow:hidden;border:2px solid rgba(255,255,255,.1);flex-shrink:0;
-}
-.page-thumb img { width:100%;height:100%;object-fit:cover; }
-.page-thumb .del-btn {
-  position:absolute;top:2px;right:2px;background:var(--pink);border:none;
+/* SCAN */
+.scan-drop{width:100%;border:2px dashed rgba(255,255,255,.13);border-radius:14px;min-height:100px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  cursor:pointer;position:relative;overflow:hidden;background:rgba(255,255,255,.02);transition:border-color .2s,background .2s;}
+.scan-drop:hover{border-color:var(--teal);background:rgba(6,214,160,.04);}
+.scan-drop input{display:none;}
+.scan-drop .drop-icon{font-size:2.2rem;}
+.scan-drop .drop-hint{font-size:.82rem;color:var(--dim);text-align:center;padding:0 14px;}
+.scan-drop .drop-hint strong{color:var(--teal);}
+.pages-queue{display:flex;flex-wrap:wrap;gap:8px;width:100%;}
+.page-thumb{position:relative;width:64px;height:64px;border-radius:10px;overflow:hidden;border:2px solid rgba(255,255,255,.1);flex-shrink:0;}
+.page-thumb img{width:100%;height:100%;object-fit:cover;}
+.page-thumb .del-btn{position:absolute;top:2px;right:2px;background:var(--pink);border:none;
   border-radius:50%;width:17px;height:17px;font-size:.55rem;cursor:pointer;color:#fff;
-  display:flex;align-items:center;justify-content:center;
-}
-.page-thumb .pg-num {
-  position:absolute;bottom:2px;left:3px;font-size:.58rem;color:#fff;
-  font-family:'Baloo 2',cursive;text-shadow:0 1px 3px rgba(0,0,0,.9);
-}
+  display:flex;align-items:center;justify-content:center;}
+.page-thumb .pg-num{position:absolute;bottom:2px;left:3px;font-size:.58rem;color:#fff;
+  font-family:'Baloo 2',cursive;text-shadow:0 1px 3px rgba(0,0,0,.9);}
+.status{font-size:.82rem;text-align:center;min-height:18px;}
+.status.ok{color:var(--teal);}
+.status.err{color:var(--pink);}
+.status.info{color:var(--dim);}
+.ext-box{display:none;flex-direction:column;gap:8px;width:100%;}
+.ext-box label{font-family:'Baloo 2',cursive;font-size:.78rem;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;}
 
-.status { font-size:.82rem;text-align:center;min-height:18px; }
-.status.ok  { color:var(--teal); }
-.status.err { color:var(--pink); }
-.status.info{ color:var(--dim); }
+/* SETTINGS */
+.mode-toggle{display:flex;width:100%;background:rgba(255,255,255,.04);border-radius:11px;overflow:hidden;border:1.5px solid rgba(255,255,255,.07);}
+.mode-btn{flex:1;padding:9px 8px;font-family:'Baloo 2',cursive;font-size:.9rem;border:none;cursor:pointer;background:transparent;color:var(--dim);transition:all .2s;}
+.mode-btn.active{background:var(--blue);color:#fff;}
+.speed-row{display:flex;align-items:center;gap:10px;width:100%;}
+.speed-row label{font-size:.8rem;color:var(--dim);white-space:nowrap;font-family:'Baloo 2',cursive;}
+input[type=range]{flex:1;accent-color:var(--teal);cursor:pointer;}
 
-.ext-box { display:none;flex-direction:column;gap:8px;width:100%; }
-.ext-box label { font-family:'Baloo 2',cursive;font-size:.78rem;color:var(--gold);text-transform:uppercase;letter-spacing:.5px; }
+/* LISTEN MODE TOGGLE */
+.listen-toggle{display:flex;width:100%;background:rgba(255,255,255,.04);border-radius:11px;overflow:hidden;border:1.5px solid rgba(255,255,255,.07);}
+.listen-btn{flex:1;padding:9px 8px;font-family:'Baloo 2',cursive;font-size:.88rem;border:none;cursor:pointer;background:transparent;color:var(--dim);transition:all .2s;}
+.listen-btn.active{background:#7b2d8b;color:#fff;}
 
-.mode-toggle {
-  display:flex;width:100%;background:rgba(255,255,255,.04);
-  border-radius:11px;overflow:hidden;border:1.5px solid rgba(255,255,255,.07);
-}
-.mode-btn {
-  flex:1;padding:9px 8px;font-family:'Baloo 2',cursive;font-size:.9rem;
-  border:none;cursor:pointer;background:transparent;color:var(--dim);transition:all .2s;
-}
-.mode-btn.active { background:var(--blue);color:#fff; }
-
-.speed-row { display:flex;align-items:center;gap:10px;width:100%; }
-.speed-row label { font-size:.8rem;color:var(--dim);white-space:nowrap;font-family:'Baloo 2',cursive; }
-input[type=range] { flex:1;accent-color:var(--teal);cursor:pointer; }
-#speed-val { font-size:.82rem;color:var(--white);min-width:56px;text-align:right;font-family:'Baloo 2',cursive; }
-
-.big-btn {
-  font-family:'Baloo 2',cursive;font-size:1.1rem;letter-spacing:.4px;
-  padding:14px 44px;border-radius:50px;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s;
-}
-.big-btn:hover { transform:translateY(-2px); }
-.big-btn.gold { background:linear-gradient(135deg,var(--gold),#f4a213);color:#111;box-shadow:0 5px 20px rgba(255,209,102,.3); }
-.big-btn.gold:hover { box-shadow:0 8px 28px rgba(255,209,102,.5); }
-.big-btn.teal { background:linear-gradient(135deg,var(--teal),#04b887);color:#0d1b2a;box-shadow:0 5px 18px rgba(6,214,160,.25); }
-.big-btn.teal:hover { box-shadow:0 8px 26px rgba(6,214,160,.4); }
-.big-btn:disabled { opacity:.4;cursor:not-allowed;transform:none!important; }
-
-.spin { display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.2);border-top-color:var(--teal);border-radius:50%;animation:spin .65s linear infinite;vertical-align:middle;margin-right:5px; }
+.big-btn{font-family:'Baloo 2',cursive;font-size:1.1rem;letter-spacing:.4px;padding:14px 44px;border-radius:50px;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s;}
+.big-btn:hover{transform:translateY(-2px);}
+.big-btn.gold{background:linear-gradient(135deg,var(--gold),#f4a213);color:#111;box-shadow:0 5px 20px rgba(255,209,102,.3);}
+.big-btn.gold:hover{box-shadow:0 8px 28px rgba(255,209,102,.5);}
+.big-btn.teal{background:linear-gradient(135deg,var(--teal),#04b887);color:#0d1b2a;box-shadow:0 5px 18px rgba(6,214,160,.25);}
+.big-btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;}
+.spin{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.2);border-top-color:var(--teal);border-radius:50%;animation:spin .65s linear infinite;vertical-align:middle;margin-right:5px;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
-/* phone controller panel */
-#phone-controls {
-  width:100%;background:var(--surface);
-  border:1.5px solid rgba(255,255,255,.07);
-  border-radius:var(--radius);padding:16px;
-  display:none;flex-direction:column;gap:12px;align-items:center;
-}
-.ctrl-row { display:flex;gap:8px;flex-wrap:wrap;justify-content:center; }
-.ctrl-btn {
-  font-family:'Baloo 2',cursive;font-size:.95rem;
-  padding:12px 22px;border-radius:50px;border:1.5px solid transparent;cursor:pointer;transition:all .15s;
-  min-width:80px;
-}
-.ctrl-btn.play   { background:var(--teal);color:#0d1b2a;border-color:var(--teal); }
-.ctrl-btn.play:hover { filter:brightness(1.1); }
-.ctrl-btn.ghost  { background:transparent;border-color:rgba(255,255,255,.18);color:var(--dim); }
-.ctrl-btn.ghost:hover { border-color:rgba(255,255,255,.4);color:var(--white); }
-.ctrl-btn.danger { background:transparent;border-color:var(--pink);color:var(--pink); }
-.ctrl-btn.danger:hover { background:var(--pink);color:#fff; }
+/* CONTROLLER */
+#phone-controls{width:100%;background:var(--surface);border:1.5px solid rgba(255,255,255,.07);border-radius:var(--radius);padding:16px;display:none;flex-direction:column;gap:12px;align-items:center;}
+.ctrl-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.ctrl-btn{font-family:'Baloo 2',cursive;font-size:.95rem;padding:12px 22px;border-radius:50px;border:1.5px solid transparent;cursor:pointer;transition:all .15s;min-width:80px;}
+.ctrl-btn.play{background:var(--teal);color:#0d1b2a;border-color:var(--teal);}
+.ctrl-btn.play:hover{filter:brightness(1.1);}
+.ctrl-btn.ghost{background:transparent;border-color:rgba(255,255,255,.18);color:var(--dim);}
+.ctrl-btn.ghost:hover{border-color:rgba(255,255,255,.4);color:var(--white);}
+.ctrl-btn.danger{background:transparent;border-color:var(--pink);color:var(--pink);}
+.ctrl-btn.danger:hover{background:var(--pink);color:#fff;}
+.now-playing{font-family:'Baloo 2',cursive;font-size:1.1rem;color:var(--gold);text-align:center;
+  background:rgba(255,209,102,.07);border-radius:12px;padding:10px 16px;width:100%;min-height:44px;}
+.prog-track{width:100%;height:5px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--gold));border-radius:99px;transition:width .2s;}
+.disp-mode-pill{display:flex;background:rgba(255,255,255,.05);border-radius:9px;overflow:hidden;border:1.5px solid rgba(255,255,255,.07);}
+.disp-mode-pill button{padding:6px 14px;font-family:'Baloo 2',cursive;font-size:.8rem;border:none;cursor:pointer;background:transparent;color:var(--dim);transition:all .2s;}
+.disp-mode-pill button.active{background:var(--blue);color:#fff;}
+.listen-pill{display:flex;background:rgba(255,255,255,.05);border-radius:9px;overflow:hidden;border:1.5px solid rgba(255,255,255,.07);}
+.listen-pill button{padding:6px 14px;font-family:'Baloo 2',cursive;font-size:.8rem;border:none;cursor:pointer;background:transparent;color:var(--dim);transition:all .2s;}
+.listen-pill button.active{background:#7b2d8b;color:#fff;}
 
-.now-playing {
-  font-family:'Baloo 2',cursive;font-size:1.1rem;
-  color:var(--gold);text-align:center;
-  background:rgba(255,209,102,.07);border-radius:12px;padding:10px 16px;width:100%;
-  min-height:44px;
-}
-
-.prog-track { width:100%;height:5px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden; }
-.prog-fill   { height:100%;background:linear-gradient(90deg,var(--teal),var(--gold));border-radius:99px;transition:width .2s; }
-
-.disp-mode-pill {
-  display:flex;background:rgba(255,255,255,.05);
-  border-radius:9px;overflow:hidden;border:1.5px solid rgba(255,255,255,.07);
-}
-.disp-mode-pill button {
-  padding:6px 16px;font-family:'Baloo 2',cursive;font-size:.82rem;
-  border:none;cursor:pointer;background:transparent;color:var(--dim);transition:all .2s;
-}
-.disp-mode-pill button.active { background:var(--blue);color:#fff; }
+/* API KEY SETUP */
+#apikey-screen{position:fixed;inset:0;z-index:200;background:var(--bg);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:28px;}
+#apikey-screen h2{font-family:'Baloo 2',cursive;font-size:1.7rem;color:var(--gold);text-align:center;}
+#apikey-screen p{color:var(--dim);font-size:.88rem;text-align:center;max-width:320px;line-height:1.6;}
+.apikey-input{width:100%;max-width:380px;font-family:'Nunito',sans-serif;font-size:.85rem;
+  background:var(--surface);border:2px solid rgba(255,255,255,.12);border-radius:12px;
+  color:var(--white);padding:13px 16px;outline:none;transition:border-color .2s;}
+.apikey-input:focus{border-color:var(--teal);}
 </style>
 </head>
 <body>
 <div class="bg-blobs"><span></span><span></span><span></span></div>
 
-<!-- ══════════════════════════════════
-     ROLE SELECT SCREEN
-══════════════════════════════════ -->
+<!-- API KEY SETUP (shown when needed) -->
+<div id="apikey-screen">
+  <h2>🔑 Gemini API Key</h2>
+  <p>Enter your Gemini API key to enable book scanning. Get one free at <strong style="color:var(--teal)">aistudio.google.com</strong></p>
+  <input class="apikey-input" id="apikey-input" type="password" placeholder="AIzaSy...">
+  <button class="big-btn teal" onclick="saveApiKey()" style="padding:12px 36px;font-size:1rem;">Save & Continue</button>
+  <button onclick="document.getElementById('apikey-screen').style.display='none'" style="background:none;border:none;color:var(--dim);cursor:pointer;font-family:'Baloo 2',cursive;">Skip for now</button>
+</div>
+
+<!-- ROLE SCREEN -->
 <div id="role-screen">
   <h1>📖 Yuvaan's Reader</h1>
   <p>Who is using this device?</p>
@@ -341,83 +204,65 @@ input[type=range] { flex:1;accent-color:var(--teal);cursor:pointer; }
   </div>
 </div>
 
-<!-- ══════════════════════════════════
-     ROOM CODE SCREEN (phone enters code)
-══════════════════════════════════ -->
+<!-- ROOM CODE SCREEN -->
 <div id="room-screen">
   <h2>🔗 Connect to TV</h2>
   <p>Enter the 4-digit code shown on the TV screen</p>
   <input class="code-input" id="room-code-input" maxlength="4" placeholder="••••" type="tel"
-    oninput="this.value=this.value.replace(/\D/g,''); if(this.value.length===4) joinRoom(this.value)">
+    oninput="this.value=this.value.replace(/\D/g,'');if(this.value.length===4)joinRoom(this.value)">
   <p style="font-size:.78rem;color:var(--dim)">Code updates every session</p>
   <button class="big-btn teal" onclick="joinRoom(document.getElementById('room-code-input').value)">Connect</button>
 </div>
 
-<!-- ══════════════════════════════════
-     TV DISPLAY SCREEN
-══════════════════════════════════ -->
+<!-- TV DISPLAY SCREEN -->
 <div id="tv-screen">
-  <div class="tv-conn-dot">
-    <span class="dot" id="tv-dot"></span>
-    <span id="tv-conn-label">Waiting for phone…</span>
-  </div>
+  <div class="tv-conn-dot"><span class="dot" id="tv-dot"></span><span id="tv-conn-label">Waiting for phone…</span></div>
   <div class="tv-room-badge" id="tv-room-badge"></div>
-
   <div class="tv-waiting" id="tv-waiting">
     <div class="big-code" id="tv-code-display">----</div>
     <p>Open the app on your phone<br>select <strong style="color:var(--teal)">Phone</strong> and enter this code</p>
   </div>
-
   <div id="tv-word-display"></div>
   <div id="tv-sent-display"></div>
-
   <div class="tv-counter" id="tv-counter"></div>
   <div class="tv-progress"><div class="tv-progress-fill" id="tv-prog-fill" style="width:0%"></div></div>
 </div>
 
-<!-- ══════════════════════════════════
-     PHONE UI
-══════════════════════════════════ -->
+<!-- PHONE UI -->
 <header>
   <h1>📖 Yuvaan's Reader</h1>
-  <p>Controller — TV syncs in real time <span style="font-size:.7rem;opacity:.4">v11</span></p>
+  <p>Controller — TV syncs in real time <span style="font-size:.7rem;opacity:.4">v12</span></p>
 </header>
-
-<!-- sync status bar -->
-<div class="sync-bar" style="max-width:660px;width:calc(100% - 28px)">
-  <div class="sync-left">
-    <span class="dot" id="phone-dot"></span>
-    <span id="phone-conn-label">Not connected</span>
-  </div>
+<div class="sync-bar">
+  <div class="sync-left"><span class="dot" id="phone-dot"></span><span id="phone-conn-label">Not connected</span></div>
   <span class="room-pill" id="phone-room-pill">Room: —</span>
 </div>
-
 <div class="top-tabs">
   <button class="top-tab active" onclick="switchInput('type')">✏️ Type</button>
   <button class="top-tab"        onclick="switchInput('scan')">📷 Scan</button>
 </div>
 
 <div class="container">
-
-  <!-- TYPE panel -->
+  <!-- TYPE PANEL -->
   <div id="panel-type" class="card">
     <div class="card-title">✏️ Type story text</div>
     <textarea id="type-text" placeholder="Type or paste any text here…&#10;e.g. Once upon a time, a little rabbit lived in a cozy burrow."></textarea>
   </div>
 
-  <!-- SCAN panel -->
+  <!-- SCAN PANEL -->
   <div id="panel-scan" style="display:none;width:100%;flex-direction:column;gap:12px;align-items:center;">
     <div class="card">
       <div class="card-title">📷 Add book pages</div>
-      <label class="scan-drop" for="scan-input" style="cursor:pointer">
-        <input type="file" id="scan-input" accept="image/*,application/pdf" multiple onchange="onPagesAdded(event)" style="display:none">
+      <label class="scan-drop" for="scan-input">
+        <input type="file" id="scan-input" accept="image/*,application/pdf" multiple onchange="onPagesAdded(event)">
         <span class="drop-icon">📸</span>
-        <p class="drop-hint">Tap to <strong>photograph</strong>, <strong>upload images</strong> or <strong>PDF files</strong></p>
+        <p class="drop-hint">Tap to <strong>photograph</strong>, <strong>upload images</strong> or <strong>PDF</strong></p>
       </label>
       <div class="pages-queue" id="pages-queue"></div>
       <div class="status info" id="scan-status">No pages added yet</div>
-      <div id="scan-debug" style="font-size:.72rem;color:#f9c74f;word-break:break-all;padding:4px;"></div>
-      <button class="big-btn teal" id="extract-btn" onclick="extractAllPages()" disabled>🔍 Extract Text</button>
+      <div id="scan-debug" style="font-size:.72rem;color:#f9c74f;word-break:break-all;padding:4px;display:none;"></div>
+      <button class="big-btn teal" id="extract-btn" onclick="extractAllPages()" disabled>🔍 Extract Text from Pages</button>
+      <button onclick="showApiKeySetup()" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:.78rem;font-family:'Baloo 2',cursive;padding:4px;">🔑 Update API Key</button>
     </div>
     <div class="card ext-box" id="ext-box">
       <label>✏️ Extracted text — edit if needed</label>
@@ -435,323 +280,271 @@ input[type=range] { flex:1;accent-color:var(--teal);cursor:pointer; }
         <button class="mode-btn"        id="mode-sent" onclick="setMode('sentence')">📝 Sentence</button>
       </div>
     </div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <span style="font-size:.8rem;color:var(--dim)">Reading mode</span>
+      <div class="listen-toggle">
+        <button class="listen-btn active" id="listen-off" onclick="setListen(false)">👁️ Read (silent)</button>
+        <button class="listen-btn"        id="listen-on"  onclick="setListen(true)">🔊 Listen (speak aloud)</button>
+      </div>
+    </div>
     <div class="speed-row">
       <label>⏱ Speed</label>
       <input type="range" id="speed-slider" min="1" max="5" value="3" oninput="updateSpeed(this.value)">
-      <span id="speed-val">Normal</span>
+      <span id="speed-val" style="font-family:'Baloo 2',cursive;font-size:.82rem;min-width:60px;text-align:right;">Normal</span>
     </div>
-    <button class="big-btn gold" id="start-btn" onclick="startReading()">▶ Send to TV &amp; Start</button>
+    <button class="big-btn gold" onclick="startReading()">▶ Send to TV &amp; Start</button>
   </div>
 
-  <!-- PHONE CONTROLLER (shown after start) -->
+  <!-- CONTROLLER -->
   <div id="phone-controls">
     <div class="card-title" style="color:var(--gold)">🎮 Remote Control</div>
-
-    <div class="disp-mode-pill">
-      <button id="dp-word" class="active" onclick="liveMode('word')">🔤 Word</button>
-      <button id="dp-sent"               onclick="liveMode('sentence')">📝 Sentence</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+      <div class="disp-mode-pill">
+        <button id="dp-word" class="active" onclick="liveMode('word')">🔤 Word</button>
+        <button id="dp-sent"               onclick="liveMode('sentence')">📝 Sentence</button>
+      </div>
+      <div class="listen-pill">
+        <button id="lp-off" class="active" onclick="liveListen(false)">👁️ Read</button>
+        <button id="lp-on"                 onclick="liveListen(true)">🔊 Listen</button>
+      </div>
     </div>
-
     <div class="now-playing" id="now-playing">—</div>
     <div class="prog-track"><div class="prog-fill" id="phone-prog" style="width:0%"></div></div>
-
     <div class="ctrl-row">
-      <button class="ctrl-btn ghost"  onclick="send('back')">⏮ Back</button>
+      <button class="ctrl-btn ghost"  onclick="stepBack()">⏮ Back</button>
       <button class="ctrl-btn play"   id="phone-play-btn" onclick="togglePlay()">▶ Play</button>
-      <button class="ctrl-btn ghost"  onclick="send('next')">⏭ Next</button>
+      <button class="ctrl-btn ghost"  onclick="stepForward()">⏭ Next</button>
     </div>
-
     <div class="speed-row" style="width:100%;background:rgba(255,255,255,.04);border-radius:12px;padding:10px 14px;">
       <label>⏱</label>
       <input type="range" id="live-speed" min="1" max="5" value="3" oninput="liveSpeed(this.value)">
       <span id="live-speed-val" style="font-family:'Baloo 2',cursive;font-size:.82rem;color:var(--white);min-width:56px;text-align:right;">Normal</span>
     </div>
-
     <button class="ctrl-btn danger" style="width:100%" onclick="resetAll()">✕ Stop &amp; Reset</button>
   </div>
+</div>
 
-</div><!-- /container -->
-
-<!-- ══════════════════════════════════
-     PUBNUB + APP LOGIC
-══════════════════════════════════ -->
 <script>
-// ─────────────────────────────────────────
-// PubNub keys — free demo keys (works fine for personal use)
-// For permanent use, get free keys at pubnub.com (takes 2 min)
-// ─────────────────────────────────────────
-const PUB_KEY  = 'demo';
-const SUB_KEY  = 'demo';
+// ═══════════════════════════════
+// STATE
+// ═══════════════════════════════
+const PUB_KEY = 'demo', SUB_KEY = 'demo';
+let pubnub=null, myRole=null, roomId=null, channel=null;
+let fullText='', units=[], current=0, playing=false, timer=null;
+let displayMode='word', listenMode=false, msPerWord=1000;
+let scannedPages=[], pageTexts=[], inputMode='type';
+const SPEED_MAP={1:'Very Slow',2:'Slow',3:'Normal',4:'Fast',5:'Very Fast'};
+const MS_MAP={1:2400,2:1600,3:1000,4:600,5:320};
 
-let pubnub = null;
-let myRole  = null;   // 'phone' | 'tv'
-let roomId  = null;   // 4-digit string
-let channel = null;
+// Speech synthesis
+let synth = window.speechSynthesis;
+let currentUtterance = null;
 
-// playback state (phone is source of truth)
-let fullText    = '';
-let units       = [];
-let current     = 0;
-let playing     = false;
-let timer       = null;
-let displayMode = 'word';
-let msPerWord   = 1000;
+// ═══════════════════════════════
+// API KEY
+// ═══════════════════════════════
+function saveApiKey() {
+  const key = document.getElementById('apikey-input').value.trim();
+  if (!key.startsWith('AIza')) { alert('Please enter a valid API key starting with AIza'); return; }
+  localStorage.setItem('gemini_key', key);
+  document.getElementById('apikey-screen').style.display = 'none';
+  alert('✅ Key saved! You can now scan pages.');
+}
+function showApiKeySetup() {
+  const el = document.getElementById('apikey-input');
+  el.value = localStorage.getItem('gemini_key') || '';
+  document.getElementById('apikey-screen').style.display = 'flex';
+}
+function getApiKey() { return localStorage.getItem('gemini_key') || 'AIzaSyBbiFscdpJB9q6GPtzOLUpRr2J8D2kWT2I'; }
 
-const SPEED_MAP = {1:'Very Slow',2:'Slow',3:'Normal',4:'Fast',5:'Very Fast'};
-const MS_MAP    = {1:2400,2:1600,3:1000,4:600,5:320};
-
-// scan state
-let scannedPages = [];
-let pageTexts    = [];
-let inputMode    = 'type';
-
-// ─────────────────────────────────────────
-// ROLE SELECT
-// ─────────────────────────────────────────
+// ═══════════════════════════════
+// ROLE / NAV
+// ═══════════════════════════════
 function selectRole(role) {
   myRole = role;
   document.getElementById('role-screen').style.display = 'none';
-
   if (role === 'tv') {
-    // generate random 4-digit room code
-    roomId = String(Math.floor(1000 + Math.random() * 9000));
+    roomId = String(Math.floor(1000 + Math.random()*9000));
     channel = 'yuvaan_' + roomId;
     document.getElementById('tv-screen').style.display = 'flex';
     document.getElementById('tv-code-display').textContent = roomId;
     document.getElementById('tv-room-badge').textContent = 'Room ' + roomId;
     initPubNub();
   } else {
-    // phone: show room code input
     document.getElementById('room-screen').style.display = 'flex';
   }
 }
 
 function joinRoom(code) {
-  if (!code || code.length !== 4) { alert('Please enter a 4-digit code from the TV'); return; }
-  roomId  = code;
-  channel = 'yuvaan_' + roomId;
+  if (!code || code.length !== 4) { alert('Please enter the 4-digit code from the TV'); return; }
+  roomId = code; channel = 'yuvaan_' + roomId;
   document.getElementById('room-screen').style.display = 'none';
   document.getElementById('phone-room-pill').textContent = 'Room: ' + roomId;
   initPubNub();
-  // tell TV phone is connected
-  setTimeout(()=>publish({type:'phone_connected'}), 800);
+  setTimeout(() => publish({type:'phone_connected'}), 800);
 }
 
-// ─────────────────────────────────────────
+function switchInput(mode) {
+  inputMode = mode;
+  document.querySelectorAll('.top-tab').forEach((t,i) => t.classList.toggle('active', i===(mode==='type'?0:1)));
+  document.getElementById('panel-type').style.display = mode==='type'?'flex':'none';
+  document.getElementById('panel-scan').style.display = mode==='scan'?'flex':'none';
+}
+
+// ═══════════════════════════════
 // PUBNUB
-// ─────────────────────────────────────────
+// ═══════════════════════════════
 function initPubNub() {
-  pubnub = new PubNub({
-    publishKey:   PUB_KEY,
-    subscribeKey: SUB_KEY,
-    userId: myRole + '_' + Date.now()
-  });
-
+  pubnub = new PubNub({ publishKey:PUB_KEY, subscribeKey:SUB_KEY, userId: myRole+'_'+Date.now() });
   pubnub.addListener({
-    message: ({ message }) => handleMessage(message),
-    status:  (s) => {
-      if (s.category === 'PNConnectedCategory') setConnected(true);
-    }
+    message: ({message}) => handleMessage(message),
+    status: s => { if(s.category==='PNConnectedCategory') setConnected(true); }
   });
-
-  pubnub.subscribe({ channels: [channel] });
+  pubnub.subscribe({ channels:[channel] });
 }
-
-function publish(msg) {
-  if (!pubnub) return;
-  pubnub.publish({ channel, message: msg });
-}
-
+function publish(msg) { if(pubnub) pubnub.publish({channel, message:msg}); }
 function setConnected(on) {
-  if (myRole === 'tv') {
-    document.getElementById('tv-dot').className = 'dot' + (on?' on':'');
+  if(myRole==='tv') {
+    document.getElementById('tv-dot').className='dot'+(on?' on':'');
   } else {
-    document.getElementById('phone-dot').className = 'dot' + (on?' on':'');
-    document.getElementById('phone-conn-label').textContent = on ? 'Connected ✓' : 'Not connected';
+    document.getElementById('phone-dot').className='dot'+(on?' on':'');
+    document.getElementById('phone-conn-label').textContent=on?'Connected ✓':'Not connected';
   }
 }
 
-// ─────────────────────────────────────────
+// ═══════════════════════════════
 // MESSAGE HANDLER
-// ─────────────────────────────────────────
+// ═══════════════════════════════
 function handleMessage(msg) {
-  if (myRole === 'tv') {
-    handleTV(msg);
-  } else {
-    handlePhone(msg);
+  if (myRole==='tv') {
+    switch(msg.type) {
+      case 'phone_connected':
+        document.getElementById('tv-dot').className='dot on';
+        document.getElementById('tv-conn-label').textContent='Phone connected ✓'; break;
+      case 'load':
+        units=msg.units; displayMode=msg.mode; listenMode=msg.listen||false; current=0;
+        tvShowUnit(0); tvHideWaiting(); break;
+      case 'show':
+        current=msg.idx; displayMode=msg.mode; listenMode=msg.listen||false;
+        tvShowUnit(msg.idx); break;
+      case 'mode': displayMode=msg.mode; tvShowUnit(current); break;
+      case 'listen': listenMode=msg.listen; break;
+      case 'done': tvShowDone(); break;
+      case 'reset': tvReset(); break;
+    }
   }
 }
 
-function handleTV(msg) {
-  switch(msg.type) {
-    case 'phone_connected':
-      document.getElementById('tv-dot').className = 'dot on';
-      document.getElementById('tv-conn-label').textContent = 'Phone connected ✓';
-      break;
-    case 'load':
-      units       = msg.units;
-      displayMode = msg.mode;
-      current     = 0;
-      tvShowUnit(0);
-      tvHideWaiting();
-      break;
-    case 'show':
-      current = msg.idx;
-      tvShowUnit(msg.idx);
-      break;
-    case 'mode':
-      displayMode = msg.mode;
-      tvShowUnit(current);
-      break;
-    case 'done':
-      tvShowDone();
-      break;
-    case 'reset':
-      tvReset();
-      break;
-  }
-}
-
-function handlePhone(msg) {
-  // phone doesn't need to handle TV messages currently
-}
-
-// ─────────────────────────────────────────
-// TV DISPLAY FUNCTIONS
-// ─────────────────────────────────────────
-function tvHideWaiting() {
-  document.getElementById('tv-waiting').style.display = 'none';
-}
+// ═══════════════════════════════
+// TV DISPLAY
+// ═══════════════════════════════
+function tvHideWaiting() { document.getElementById('tv-waiting').style.display='none'; }
 
 function tvShowUnit(idx) {
-  if (!units || idx >= units.length) return;
-  const wordEl = document.getElementById('tv-word-display');
-  const sentEl = document.getElementById('tv-sent-display');
-
-  if (displayMode === 'word') {
-    wordEl.style.display = 'block'; sentEl.style.display = 'none';
-    wordEl.style.animation = 'none'; wordEl.offsetHeight; wordEl.style.animation = '';
-    wordEl.textContent = units[idx];
+  if(!units||idx>=units.length) return;
+  const wordEl=document.getElementById('tv-word-display');
+  const sentEl=document.getElementById('tv-sent-display');
+  if(displayMode==='word') {
+    wordEl.style.display='block'; sentEl.style.display='none';
+    wordEl.style.animation='none'; wordEl.offsetHeight; wordEl.style.animation='';
+    wordEl.textContent=units[idx];
   } else {
-    wordEl.style.display = 'none'; sentEl.style.display = 'block';
-    sentEl.style.animation = 'none'; sentEl.offsetHeight; sentEl.style.animation = '';
-    sentEl.textContent = units[idx];
+    wordEl.style.display='none'; sentEl.style.display='block';
+    sentEl.style.animation='none'; sentEl.offsetHeight; sentEl.style.animation='';
+    sentEl.textContent=units[idx];
   }
+  document.getElementById('tv-counter').textContent=(displayMode==='word'?'Word ':'Sentence ')+(idx+1)+' of '+units.length;
+  document.getElementById('tv-prog-fill').style.width=((idx+1)/units.length*100)+'%';
+  // Speak on TV if listen mode
+  if(listenMode) tvSpeak(units[idx]);
+}
 
-  document.getElementById('tv-counter').textContent =
-    (displayMode==='word'?'Word ':'Sentence ') + (idx+1) + ' of ' + units.length;
-  document.getElementById('tv-prog-fill').style.width = ((idx+1)/units.length*100) + '%';
+function tvSpeak(text) {
+  if(!synth) return;
+  synth.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 0.85;
+  utt.pitch = 1.1;
+  utt.lang = 'en-IN';
+  synth.speak(utt);
 }
 
 function tvShowDone() {
-  const wordEl = document.getElementById('tv-word-display');
-  wordEl.style.display = 'block';
-  wordEl.textContent = '🎉';
-  document.getElementById('tv-sent-display').style.display = 'none';
-  document.getElementById('tv-counter').textContent = 'Finished! Great job!';
-  document.getElementById('tv-prog-fill').style.width = '100%';
+  document.getElementById('tv-word-display').style.display='block';
+  document.getElementById('tv-word-display').textContent='🎉';
+  document.getElementById('tv-sent-display').style.display='none';
+  document.getElementById('tv-counter').textContent='Finished! Great job!';
+  document.getElementById('tv-prog-fill').style.width='100%';
+  if(listenMode) tvSpeak('Great job! You finished the story!');
   tvBurst();
 }
 
 function tvBurst() {
-  const stage = document.getElementById('tv-screen');
+  const stage=document.getElementById('tv-screen');
   ['⭐','🌟','✨','🎊','👏','🥳','📖','🎈'].forEach((em,i)=>{
     setTimeout(()=>{
-      const e = document.createElement('span');
-      e.className='emoji-b'; e.textContent=em;
-      e.style.left=(5+Math.random()*88)+'%';
-      e.style.top =(10+Math.random()*70)+'%';
-      stage.appendChild(e);
-      setTimeout(()=>e.remove(),900);
+      const e=document.createElement('span'); e.className='emoji-b'; e.textContent=em;
+      e.style.left=(5+Math.random()*88)+'%'; e.style.top=(10+Math.random()*70)+'%';
+      stage.appendChild(e); setTimeout(()=>e.remove(),900);
     },i*110);
   });
 }
 
 function tvReset() {
-  document.getElementById('tv-waiting').style.display = 'flex';
-  document.getElementById('tv-word-display').style.display = 'none';
-  document.getElementById('tv-sent-display').style.display = 'none';
-  document.getElementById('tv-counter').textContent = '';
-  document.getElementById('tv-prog-fill').style.width = '0%';
+  document.getElementById('tv-waiting').style.display='flex';
+  document.getElementById('tv-word-display').style.display='none';
+  document.getElementById('tv-sent-display').style.display='none';
+  document.getElementById('tv-counter').textContent='';
+  document.getElementById('tv-prog-fill').style.width='0%';
+  if(synth) synth.cancel();
 }
 
-// ─────────────────────────────────────────
-// PHONE INPUT LOGIC
-// ─────────────────────────────────────────
-function switchInput(mode) {
-  inputMode = mode;
-  document.querySelectorAll('.top-tab').forEach((t,i)=>t.classList.toggle('active',i===(mode==='type'?0:1)));
-  document.getElementById('panel-type').style.display = mode==='type'?'flex':'none';
-  const ps = document.getElementById('panel-scan');
-  ps.style.display = mode==='scan'?'flex':'none';
-}
-
-// ── SCAN ──
+// ═══════════════════════════════
+// SCAN
+// ═══════════════════════════════
 function onPagesAdded(e) {
   Array.from(e.target.files).forEach(file => {
     const reader = new FileReader();
     reader.onload = ev => {
-      // Compress image before storing — phone photos are 3-5MB, limit is 1MB
       const raw = ev.target.result;
-      const isPdf = file.type === 'application/pdf';
-      // Skip compression for PDFs, compress images only
-      const processPage = isPdf
-        ? Promise.resolve(raw)
-        : compressImage(raw, 900);
-      processPage.then(compressed => {
+      const isPdf = file.type==='application/pdf';
+      (isPdf ? Promise.resolve(raw) : compressImage(raw, 900)).then(compressed => {
         const idx = scannedPages.length;
-        scannedPages.push({file, dataUrl: compressed});
+        scannedPages.push({file, dataUrl:compressed, isPdf});
         pageTexts.push('');
-        addThumb(isPdf ? null : compressed, idx);
+        addThumb(isPdf?null:compressed, idx);
         updateScanStatus();
       });
     };
     reader.readAsDataURL(file);
   });
-  e.target.value = '';
+  e.target.value='';
 }
 
-// Compress image to under maxKB kilobytes using canvas
-function compressImage(dataUrl, maxKB = 900) {
+function compressImage(dataUrl, maxKB=900) {
   return new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
-      let quality = 0.85;
-      let scale = 1;
-      // If image is very large, scale it down first
-      const MAX_DIM = 1600;
-      if (img.width > MAX_DIM || img.height > MAX_DIM) {
-        scale = MAX_DIM / Math.max(img.width, img.height);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width  = Math.round(img.width  * scale);
-      canvas.height = Math.round(img.height * scale);
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      // Try compressing, reduce quality until under maxKB
-      const tryCompress = (q) => {
-        const result = canvas.toDataURL('image/jpeg', q);
-        const kb = Math.round((result.length * 3) / 4 / 1024);
-        if (kb <= maxKB || q <= 0.3) {
-          resolve(result);
-        } else {
-          tryCompress(q - 0.1);
-        }
+      const MAX_DIM=1600;
+      const scale = (img.width>MAX_DIM||img.height>MAX_DIM) ? MAX_DIM/Math.max(img.width,img.height) : 1;
+      const canvas=document.createElement('canvas');
+      canvas.width=Math.round(img.width*scale); canvas.height=Math.round(img.height*scale);
+      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+      const tryQ = q => {
+        const r=canvas.toDataURL('image/jpeg',q);
+        const kb=Math.round((r.length*3)/4/1024);
+        (kb<=maxKB||q<=0.3) ? resolve(r) : tryQ(q-0.1);
       };
-      tryCompress(quality);
+      tryQ(0.85);
     };
-    img.src = dataUrl;
+    img.src=dataUrl;
   });
 }
 
 function addThumb(src, idx) {
-  const q = document.getElementById('pages-queue');
-  const wrap = document.createElement('div');
-  wrap.className='page-thumb'; wrap.id='thumb-'+idx;
-  const inner = src
-    ? `<img src="${src}">`
-    : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;background:rgba(255,209,102,.1);">📄</div>`;
+  const q=document.getElementById('pages-queue');
+  const wrap=document.createElement('div'); wrap.className='page-thumb'; wrap.id='thumb-'+idx;
+  const inner=src?`<img src="${src}">`:`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;background:rgba(255,209,102,.1);">📄</div>`;
   wrap.innerHTML=`${inner}<span class="pg-num">Pg ${idx+1}</span><button class="del-btn" onclick="removePage(${idx})">✕</button>`;
   q.appendChild(wrap);
 }
@@ -759,183 +552,172 @@ function addThumb(src, idx) {
 function removePage(idx) {
   scannedPages.splice(idx,1); pageTexts.splice(idx,1);
   document.getElementById('pages-queue').innerHTML='';
-  scannedPages.forEach((_,i)=> addThumb(scannedPages[i].dataUrl, i));
+  scannedPages.forEach((_,i)=>addThumb(scannedPages[i].isPdf?null:scannedPages[i].dataUrl,i));
   updateScanStatus();
 }
 
 function updateScanStatus() {
-  const n = scannedPages.length;
-  document.getElementById('extract-btn').disabled = n===0;
+  const n=scannedPages.length;
+  document.getElementById('extract-btn').disabled=n===0;
   setScanStatus(n===0?'No pages added yet':`${n} page${n>1?'s':''} ready — tap Extract`,'info');
 }
 
-function setScanStatus(msg,cls='info'){
-  const el=document.getElementById('scan-status');el.textContent=msg;el.className='status '+cls;
+function setScanStatus(msg,cls='info') {
+  const el=document.getElementById('scan-status'); el.textContent=msg; el.className='status '+cls;
 }
 
 async function extractAllPages() {
-  if (!scannedPages.length) return;
-  const btn = document.getElementById('extract-btn');
-  btn.disabled = true;
-  const total = scannedPages.length;
-  let allText = '';
-  let failed = 0;
+  if(!scannedPages.length) return;
+  const btn=document.getElementById('extract-btn');
+  btn.disabled=true;
+  const total=scannedPages.length;
+  let allText='', failed=0;
+  document.getElementById('scan-debug').style.display='none';
 
-  for (let i = 0; i < total; i++) {
-    const pct = Math.round((i / total) * 100);
-    setScanStatus(`📖 Reading page ${i+1} of ${total}… (${pct}%)`, 'info');
-    btn.innerHTML = `<span class="spin"></span> ${i+1}/${total} pages`;
-
+  for(let i=0;i<total;i++) {
+    setScanStatus(`📖 Reading page ${i+1} of ${total}…`,'info');
+    btn.innerHTML=`<span class="spin"></span>${i+1}/${total}`;
     try {
-      const t = await extractPage(scannedPages[i].dataUrl);
-      pageTexts[i] = t;
-      allText += (allText ? ' ' : '') + t;
+      const t=await extractPage(scannedPages[i].dataUrl);
+      pageTexts[i]=t; allText+=(allText?' ':'')+t;
     } catch(err) {
-      console.error('Extract error:', err);
       failed++;
-      document.getElementById('scan-debug').textContent = 'Last error: ' + err.message;
-
+      const dbg=document.getElementById('scan-debug');
+      dbg.style.display='block'; dbg.textContent='Error: '+err.message;
     }
-
-    // Small delay between pages to be nice to the API
-    if (i < total - 1) await sleep(500);
+    if(i<total-1) await sleep(500);
   }
 
-  if (allText.trim()) {
-    document.getElementById('ext-text').value = allText.trim();
-    document.getElementById('ext-box').style.display = 'flex';
-    const msg = failed > 0
-      ? `⚠️ Done with ${failed} page(s) skipped. Edit text then tap Start.`
-      : `✅ All ${total} pages extracted! Edit if needed, then tap Start.`;
-    setScanStatus(msg, failed > 0 ? 'info' : 'ok');
+  if(allText.trim()) {
+    document.getElementById('ext-text').value=allText.trim();
+    document.getElementById('ext-box').style.display='flex';
+    setScanStatus(failed>0?`⚠️ Done with ${failed} page(s) failed`:`✅ Done! Edit if needed, then tap Start.`,failed>0?'info':'ok');
   } else {
-    setScanStatus('❌ No text found. Try clearer, well-lit photos.', 'err');
+    setScanStatus('❌ Could not extract text. Check your API key.','err');
   }
-  btn.disabled = false;
-  btn.innerHTML = '🔍 Extract Text';
+  btn.disabled=false; btn.innerHTML='🔍 Extract Text from Pages';
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
 async function extractPage(dataUrl) {
-  // Gemini 2.0 Flash — fast, accurate, free with activated account
-  const GEMINI_KEY = 'AIzaSyBbiFscdpJB9q6GPtzOLUpRr2J8D2kWT2I';
-  const isPdf = dataUrl.startsWith('data:application/pdf');
-  const base64 = dataUrl.split(',')[1];
-  const mimeType = dataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
+  const key = getApiKey();
+  const base64=dataUrl.split(',')[1];
+  const mimeType=dataUrl.split(';')[0].split(':')[1]||'image/jpeg';
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { inline_data: { mime_type: mimeType, data: base64 } },
-            { text: "This is a children's storybook page. Extract ONLY the story text words in reading order as a single paragraph. Ignore decorative text, page numbers, or publisher info. Return ONLY the text, nothing else." }
-          ]
-        }],
-        generationConfig: { temperature: 0 }
+  const res=await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+    { method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        contents:[{parts:[
+          {inline_data:{mime_type:mimeType,data:base64}},
+          {text:"This is a children's storybook page. Extract ONLY the story text words in reading order as a single paragraph. Ignore decorative text, page numbers, or publisher info. Return ONLY the text, nothing else."}
+        ]}],
+        generationConfig:{temperature:0}
       })
     }
   );
-
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-  if (!text) throw new Error('No text found in image');
-
-  return text.replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  const data=await res.json();
+  if(data.error) throw new Error(data.error.message);
+  const text=data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+  if(!text) throw new Error('No text found');
+  return text.replace(/\n+/g,' ').replace(/\s{2,}/g,' ').trim();
 }
 
-// ─────────────────────────────────────────
-// DISPLAY MODE & SPEED
-// ─────────────────────────────────────────
-function setMode(m){
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ═══════════════════════════════
+// SETTINGS
+// ═══════════════════════════════
+function setMode(m) {
   displayMode=m;
   document.getElementById('mode-word').classList.toggle('active',m==='word');
   document.getElementById('mode-sent').classList.toggle('active',m==='sentence');
 }
 
-function liveMode(m){
-  displayMode=m;
-  document.getElementById('dp-word').classList.toggle('active',m==='word');
-  document.getElementById('dp-sent').classList.toggle('active',m==='sentence');
-  // rebuild units
-  if(fullText){ buildUnits(fullText); pausePlay(); current=0; }
-  publish({type:'mode',mode:m});
-  if(units.length) { send('show',0); }
+function setListen(on) {
+  listenMode=on;
+  document.getElementById('listen-off').classList.toggle('active',!on);
+  document.getElementById('listen-on').classList.toggle('active',on);
 }
 
-function updateSpeed(v){
+function updateSpeed(v) {
   document.getElementById('speed-val').textContent=SPEED_MAP[v];
   msPerWord=MS_MAP[v];
 }
 
-function liveSpeed(v){
+function liveMode(m) {
+  displayMode=m;
+  document.getElementById('dp-word').classList.toggle('active',m==='word');
+  document.getElementById('dp-sent').classList.toggle('active',m==='sentence');
+  if(fullText){buildUnits(fullText);pausePlay();current=0;}
+  publish({type:'mode',mode:m});
+  if(units.length) sendShow(0);
+}
+
+function liveListen(on) {
+  listenMode=on;
+  document.getElementById('lp-off').classList.toggle('active',!on);
+  document.getElementById('lp-on').classList.toggle('active',on);
+  publish({type:'listen',listen:on});
+}
+
+function liveSpeed(v) {
   document.getElementById('live-speed-val').textContent=SPEED_MAP[v];
   msPerWord=MS_MAP[v];
   if(playing){clearInterval(timer);startTimer();}
 }
 
-// ─────────────────────────────────────────
-// GET & BUILD TEXT
-// ─────────────────────────────────────────
-function getCurrentText(){
+// ═══════════════════════════════
+// TEXT & UNITS
+// ═══════════════════════════════
+function getCurrentText() {
   return inputMode==='type'
     ? document.getElementById('type-text').value.trim()
     : document.getElementById('ext-text').value.trim();
 }
 
-function buildUnits(text){
-  if(displayMode==='word'){
-    units=text.split(/\s+/).filter(Boolean);
-  } else {
-    units=(text.match(/[^.!?]+[.!?]*/g)||[text]).map(s=>s.trim()).filter(Boolean);
-  }
+function buildUnits(text) {
+  units = displayMode==='word'
+    ? text.split(/\s+/).filter(Boolean)
+    : (text.match(/[^.!?]+[.!?]*/g)||[text]).map(s=>s.trim()).filter(Boolean);
 }
 
-// ─────────────────────────────────────────
+// ═══════════════════════════════
 // START
-// ─────────────────────────────────────────
-function startReading(){
+// ═══════════════════════════════
+function startReading() {
   fullText=getCurrentText();
   if(!fullText){alert('Please add some text first!');return;}
   msPerWord=MS_MAP[document.getElementById('speed-slider').value];
   buildUnits(fullText);
-  if(!units.length)return;
+  if(!units.length) return;
   current=0; playing=false;
-
-  // send all units to TV
-  publish({type:'load', units, mode:displayMode});
-
+  publish({type:'load',units,mode:displayMode,listen:listenMode});
   document.getElementById('phone-controls').style.display='flex';
   document.getElementById('phone-play-btn').textContent='▶ Play';
   document.getElementById('live-speed').value=document.getElementById('speed-slider').value;
   document.getElementById('live-speed-val').textContent=SPEED_MAP[document.getElementById('speed-slider').value];
-  updateNowPlaying(0);
-  updatePhoneProg(0);
-  // scroll to controls
+  document.getElementById('dp-word').classList.toggle('active',displayMode==='word');
+  document.getElementById('dp-sent').classList.toggle('active',displayMode==='sentence');
+  document.getElementById('lp-off').classList.toggle('active',!listenMode);
+  document.getElementById('lp-on').classList.toggle('active',listenMode);
+  updateNowPlaying(0); updatePhoneProg(0);
   setTimeout(()=>document.getElementById('phone-controls').scrollIntoView({behavior:'smooth'}),200);
 }
 
-// ─────────────────────────────────────────
+// ═══════════════════════════════
 // PLAYBACK
-// ─────────────────────────────────────────
-function togglePlay(){
+// ═══════════════════════════════
+function togglePlay() {
   if(playing){pausePlay();}
-  else{
-    if(current>=units.length-1)current=0;
+  else {
+    if(current>=units.length-1) current=0;
     playing=true;
     document.getElementById('phone-play-btn').textContent='⏸ Pause';
-    sendShow(current);
-    startTimer();
+    sendShow(current); startTimer();
   }
 }
 
-function startTimer(){
+function startTimer() {
   const ms=displayMode==='sentence'?msPerWord*1.8:msPerWord;
   timer=setInterval(()=>{
     if(current<units.length-1){current++;sendShow(current);}
@@ -943,46 +725,38 @@ function startTimer(){
   },ms);
 }
 
-function pausePlay(){
-  playing=false;clearInterval(timer);
-  document.getElementById('phone-play-btn').textContent='▶ Play';
+function pausePlay(){playing=false;clearInterval(timer);document.getElementById('phone-play-btn').textContent='▶ Play';}
+function stepBack(){pausePlay();if(current>0){current--;sendShow(current);}}
+function stepForward(){pausePlay();if(current<units.length-1){current++;sendShow(current);}}
+
+function sendShow(idx) {
+  publish({type:'show',idx,mode:displayMode,listen:listenMode});
+  updateNowPlaying(idx); updatePhoneProg(idx);
 }
 
-function send(action,idx){
-  if(action==='back'){    pausePlay();if(current>0){current--;sendShow(current);}}
-  else if(action==='next'){pausePlay();if(current<units.length-1){current++;sendShow(current);}}
-  else if(action==='show'){sendShow(idx);}
-}
-
-function sendShow(idx){
-  publish({type:'show',idx});
-  updateNowPlaying(idx);
-  updatePhoneProg(idx);
-}
-
-function updateNowPlaying(idx){
-  if(!units.length)return;
-  const txt=units[idx]||(idx>=units.length?'Done!':'');
-  const short=txt.length>40?txt.slice(0,38)+'…':txt;
+function updateNowPlaying(idx) {
+  if(!units.length) return;
+  const txt=units[idx]||''; const short=txt.length>40?txt.slice(0,38)+'…':txt;
   document.getElementById('now-playing').textContent=short;
 }
 
-function updatePhoneProg(idx){
-  if(!units.length)return;
+function updatePhoneProg(idx) {
+  if(!units.length) return;
   document.getElementById('phone-prog').style.width=((idx+1)/units.length*100)+'%';
 }
 
-function resetAll(){
-  pausePlay();units=[];current=0;fullText='';
+function resetAll() {
+  pausePlay(); units=[];current=0;fullText='';
   publish({type:'reset'});
+  if(synth) synth.cancel();
   document.getElementById('phone-controls').style.display='none';
   document.getElementById('now-playing').textContent='—';
   document.getElementById('phone-prog').style.width='0%';
 }
 
-// ─────────────────────────────────────────
+// ═══════════════════════════════
 // INIT
-// ─────────────────────────────────────────
+// ═══════════════════════════════
 switchInput('type');
 updateSpeed(3);
 </script>
